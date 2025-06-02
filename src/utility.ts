@@ -3,6 +3,13 @@ import type { IntType, Primitive } from "./types";
 const { floor, log, huge: INF } = math;
 const NaN = 0 / 0;
 
+type CF__index = <K extends keyof CFrame>(cf: CFrame, index: K) => CFrame[K];
+export const CF__index = select(2, xpcall(
+  // retarded never cast to avoid roblox-ts error 'Cannot index a method without calling it!'
+  () => CFrame.identity[undefined! as keyof CFrame] as never,
+  () => debug.info(2, "f")[0]
+))[0] as CF__index;
+
 /**
  * Returns a consistently ordered array for a specific Enum.
  *
@@ -16,7 +23,7 @@ export function getSortedEnumItems(enumObject: Enum) {
   return enumItems;
 }
 
-export function getIntTypeSize([kind]: Primitive<IntType>) {
+export function sizeOfIntType([kind]: Primitive<IntType>) {
   switch (kind) {
     case "u8":
     case "i8":

@@ -1,6 +1,7 @@
-import { getIntTypeSize, readF16, readF24, sign } from "./utility";
+import { sizeOfIntType, readF16, readF24, sign } from "./utility";
 import type { ProcessedInfo } from "./info-processing";
 import type { IntType, Primitive, SerializedData, SerializerSchema } from "./types";
+import { AXIS_ALIGNED_ORIENTATIONS } from "./constants";
 
 const { ceil, map, pi: PI } = math;
 const { fromAxisAngle } = CFrame;
@@ -55,7 +56,7 @@ export function getDeserializeFunction<T>(
         return buffer.readu8(buf, currentOffset) === 1;
       case "string": {
         const [_, lengthType] = meta;
-        const lengthSize = getIntTypeSize(lengthType);
+        const lengthSize = sizeOfIntType(lengthType);
         const length = deserialize(lengthType) as number;
         offset += length;
 
@@ -77,6 +78,53 @@ export function getDeserializeFunction<T>(
       }
       case "cframe": {
         const [_, xType, yType, zType] = meta;
+        if (packing) {
+          const isOptimized = bits[bitIndex++];
+          if (isOptimized) {
+            const packed = buffer.readu8(buf, currentOffset);
+            offset += 1;
+
+            const optimizedPosition = packed & 0x60;
+            const optimizedRotation = packed & 0x1F;
+
+            let rotation: CFrame;
+            if (optimizedRotation !== 0x1F)
+              rotation = AXIS_ALIGNED_ORIENTATIONS[optimizedRotation];
+            else {
+              const mappedX = buffer.readu16(buf, currentOffset + 1);
+              let mappedY = buffer.readi16(buf, currentOffset + 3);
+              const mappedAngle = buffer.readu16(buf, currentOffset + 5);
+              offset += 6;
+
+              const zSign = sign(mappedY);
+              mappedY *= zSign;
+
+              const max16Bits = 2 ** 16 - 1;
+              const axisX = map(mappedX, 0, max16Bits, -1, 1);
+              let derivedMaximumSquared = 1 - axisX ** 2;
+              const derivedMaximum = derivedMaximumSquared ** 0.5;
+              const axisY = map(mappedY, 0, 2 ** 15 - 1, -derivedMaximum, derivedMaximum);
+              derivedMaximumSquared -= axisY ** 2;
+
+              const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
+              const axis = vector.create(axisX, axisY, axisZ) as unknown as Vector3;
+              const angle = map(mappedAngle, 0, max16Bits, 0, PI);
+
+              rotation = fromAxisAngle(axis, angle);
+            }
+
+            let position: Vector3;
+            if (optimizedPosition === 0x20)
+              position = Vector3.zero;
+            else if (optimizedPosition === 0x60)
+              position = Vector3.one;
+            else
+              position = deserialize(["vector", xType, yType, zType]) as Vector3;
+
+            return rotation.add(position);
+          }
+        }
+
         return deserializeCFrame(xType, yType, zType);
       }
 

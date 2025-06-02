@@ -1,5 +1,6 @@
 
-import { f32ToF16, f32ToF24, getIntTypeSize as sizeOfIntType, sign } from "./utility";
+import { f32ToF16, f32ToF24, sizeOfIntType, sign, CF__index } from "./utility";
+import { AXIS_ALIGNED_ORIENTATIONS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
 
@@ -26,8 +27,8 @@ export function getSerializeFunction<T>(
     buffer.copy(buf, 0, oldBuffer);
   }
 
-  function serialize(value: unknown, meta: SerializerSchema): void {
-    const currentOffset = offset;
+  function serialize(value: unknown, meta: SerializerSchema, newOffset = offset): void {
+    const currentOffset = newOffset;
 
     switch (meta[0]) {
       case "u8": {
@@ -124,13 +125,75 @@ export function getSerializeFunction<T>(
         const [_, xType, yType, zType] = meta;
         const cframe = value as CFrame;
 
+        if (packing) {
+          // 1-5: Orientation, 6-7: Position, 8: unused
+          let optimizedPosition = false;
+          let optimizedRotation = false;
+          let packed = 0;
+
+          const position = CF__index(cframe, "Position");
+          const rotation = CF__index(cframe, "Rotation");
+          if (position === Vector3.zero) {
+            optimizedPosition = true;
+            packed += 0x20;
+          } else if (position === Vector3.one) {
+            optimizedPosition = true;
+            packed += 0x20;
+            packed += 0x40;
+          }
+
+          const specialCase = AXIS_ALIGNED_ORIENTATIONS.indexOf(rotation);
+          if (specialCase !== -1) {
+            optimizedRotation = true;
+            packed += specialCase;
+          } else
+            packed += 0x1F;
+
+          const optimized = optimizedPosition || optimizedRotation;
+          bits.push(optimized);
+
+          allocate((optimized ? 1 : 0) + (optimizedPosition ? 0 : 12) + (optimizedRotation ? 0 : 6));
+
+          let newOffset = currentOffset;
+          if (optimized) {
+            buffer.writeu8(buf, newOffset, packed);
+            newOffset += 1;
+          }
+
+          if (!optimizedRotation) {
+            const [axis, angle] = toAxisAngle(cframe);
+            const zSign = sign(axis.Z);
+            const xAxis = axis.X;
+            const maxY = (1 - xAxis ** 2) ** 0.5;
+            const mappedX = map(xAxis, -1, 1, 0, 2 ** 16 - 1);
+            const mappedY = map(axis.Y, -maxY, maxY, 0, 2 ** 15 - 1) * zSign;
+            const mappedAngle = map(angle, 0, PI, 0, 2 ** 16 - 1);
+
+            buffer.writeu16(buf, newOffset, mappedX);
+            buffer.writei16(buf, newOffset + 2, mappedY);
+            buffer.writeu16(buf, newOffset + 4, mappedAngle);
+            newOffset += 6;
+          }
+
+          if (!optimizedPosition) {
+            serialize(cframe.X, xType, newOffset);
+            newOffset += sizeOfIntType(xType);
+            serialize(cframe.Y, yType, newOffset);
+            newOffset += sizeOfIntType(yType);
+            serialize(cframe.Z, zType, newOffset);
+            newOffset += sizeOfIntType(zType);
+          }
+
+          break;
+        }
+
         const [axis, angle] = toAxisAngle(cframe);
         const zSign = sign(axis.Z);
         const xAxis = axis.X;
         const maxY = (1 - xAxis ** 2) ** 0.5;
         const mappedX = map(xAxis, -1, 1, 0, 2 ** 16 - 1);
         const mappedY = map(axis.Y, -maxY, maxY, 0, 2 ** 15 - 1) * zSign;
-        const mappedAngle = map(angle, 0, PI, 0, 2 ** 16 - 1)
+        const mappedAngle = map(angle, 0, PI, 0, 2 ** 16 - 1);
 
         {
           let length = buffer.len(buf);
@@ -148,9 +211,11 @@ export function getSerializeFunction<T>(
           }
         }
 
-        serialize(mappedX, ["u16"]);
-        serialize(mappedY, ["i16"]);
-        serialize(mappedAngle, ["u16"]);
+        buffer.writeu16(buf, currentOffset, mappedX);
+        buffer.writei16(buf, currentOffset + 2, mappedY);
+        buffer.writeu16(buf, currentOffset + 4, mappedAngle);
+        offset += 6;
+
         serialize(cframe.X, xType);
         serialize(cframe.Y, yType);
         serialize(cframe.Z, zType);

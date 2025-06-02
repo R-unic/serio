@@ -64,7 +64,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       schema = ["object", newFields];
       break;
     }
-    // case "cframe":
+    case "cframe":
     case "bool":
       addPackedBit(info);
       break;
