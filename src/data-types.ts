@@ -1,3 +1,4 @@
+type AnySize = u8 | u16 | u32;
 export type u8 = number & { _u8?: never };
 export type u16 = number & { _u16?: never };
 export type u32 = number & { _u32?: never };
@@ -8,6 +9,8 @@ export type f16 = number & { _f16?: never };
 export type f24 = number & { _f24?: never };
 export type f32 = number & { _f32?: never };
 export type f64 = number & { _f64?: never };
+
+export type String<LengthType extends AnySize = u32> = string & { _string?: [LengthType] };
 
 /** Vector3 */
 export type Vector<
@@ -24,4 +27,4 @@ export type Transform<
 > = CFrame & { _cf?: [X, Y, Z] };
 
 /** T[] */
-export type List<T, Size extends number> = T[] & { _list?: [T, Size] };
+export type List<T, LengthType extends AnySize> = T[] & { _list?: [T, LengthType] };

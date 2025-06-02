@@ -1,5 +1,5 @@
 import type { ProcessedInfo, SerializedData, SerializerSchema } from "./types";
-import { readF16, readF24, sign } from "./utility";
+import { getIntTypeSize, readF16, readF24, sign } from "./utility";
 
 const { map, pi: PI } = math;
 const { fromAxisAngle } = CFrame;
@@ -47,6 +47,14 @@ export function getDeserializeFunction<T>(
       case "bool":
         offset += 1;
         return buffer.readu8(buf, currentOffset) === 1;
+      case "string": {
+        const [_, lengthType] = meta;
+        const lengthSize = getIntTypeSize(lengthType);
+        const length = deserialize(lengthType) as number;
+        offset += length;
+
+        return buffer.readstring(buf, currentOffset + lengthSize, length);
+      }
       case "vector": {
         const [_, xType, yType, zType] = meta;
         const x = deserialize(xType) as number;

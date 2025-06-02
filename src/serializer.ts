@@ -1,5 +1,5 @@
 
-import { f32ToF16, f32ToF24, sign } from "./utility";
+import { f32ToF16, f32ToF24, getIntTypeSize as sizeOfIntType, sign } from "./utility";
 import type { SerializerSchema, SerializedData, ProcessedInfo } from "./types";
 
 const { ceil, log, map, pi: PI } = math;
@@ -87,6 +87,20 @@ export function getSerializeFunction<T>(
       case "bool": {
         allocate(1);
         buffer.writeu8(buf, currentOffset, value ? 1 : 0);
+        break;
+      }
+      case "string": {
+        const [_, lengthType] = meta;
+        const str = value as string;
+        const length = str.size();
+        const lengthSize = sizeOfIntType(lengthType);
+        serialize(length, lengthType);
+        allocate(length);
+        buffer.writestring(buf, currentOffset + lengthSize, str);
+        break;
+      }
+      case "enum": {
+        // buffer.writeu8();
         break;
       }
       case "vector": {

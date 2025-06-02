@@ -1,13 +1,16 @@
+import type { f32, u32 } from "./data-types";
+
 type IsNumber<T, K extends string> = `_${K}` extends keyof T ? true : false;
 type HasNominal<T> = T extends T ? (T extends `_nominal_${string}` ? true : never) : never;
+type GetEnumType<T> = [T] extends [EnumItem] ? ExtractKeys<Enums, T["EnumType"]> : never;
 
 /** A shortcut for defining Roblox datatypes (which map directly to a simple type) */
 interface DataTypes {
-  cframe: CFrame;
   numbersequence: NumberSequence;
   colorsequence: ColorSequence;
-  color3: Color3;
+  color: Color3;
 }
+
 
 export type SerializerMetadata<T> = unknown extends T
   ? ["optional", ["blob"]]
@@ -36,17 +39,25 @@ export type SerializerMetadata<T> = unknown extends T
   : [T] extends [boolean]
   ? ["bool"]
   : [T] extends [number]
-  ? ["f64"]
+  ? ["f32"]
+  : ["_string", T] extends [keyof T, { _string?: [infer V] }]
+  ? ["string", SerializerMetadata<V>]
   : [T] extends [string]
-  ? ["string"]
+  ? ["string", SerializerMetadata<u32>]
   : ["_vector", T] extends [keyof T, { _vector?: [infer X, infer Y, infer Z] }]
   ? ["vector", SerializerMetadata<X>, SerializerMetadata<Y>, SerializerMetadata<Z>]
+  : [T] extends [Vector3]
+  ? ["vector", SerializerMetadata<f32>, SerializerMetadata<f32>, SerializerMetadata<f32>]
   : ["_cf", T] extends [keyof T, { _cf?: [infer X, infer Y, infer Z] }]
   ? ["cframe", SerializerMetadata<X>, SerializerMetadata<Y>, SerializerMetadata<Z>]
+  : [T] extends [CFrame]
+  ? ["cframe", SerializerMetadata<f32>, SerializerMetadata<f32>, SerializerMetadata<f32>]
   : [T] extends [DataTypes[keyof DataTypes]]
   ? [ExtractKeys<DataTypes, T>]
   : ["_list", T] extends [keyof T, { _list?: [infer V, infer Size] }]
   ? ["list", SerializerMetadata<V>, SerializerMetadata<Size>]
+  : [T] extends [EnumItem]
+  ? ["enum", GetEnumType<T>]
   : true extends HasNominal<keyof T>
   ? ["blob"]
   : T extends object

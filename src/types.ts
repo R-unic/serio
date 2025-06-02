@@ -4,20 +4,21 @@ export interface SerializedData {
 }
 
 export type Modifiers = "optional" | "packed";
-export type IntTypes = "i8" | "i16" | "i32" | "u8" | "u16" | "u32";
+export type IntType = "i8" | "i16" | "i32" | "u8" | "u16" | "u32";
 export type PrimitiveDataType =
-  | IntTypes
+  | IntType
   | "f16" | "f24" | "f32" | "f64"
-  | "bool";
+  | "bool"
+  | "enum";
 
-export type Primitive = [PrimitiveDataType];
+export type Primitive<T extends PrimitiveDataType = PrimitiveDataType> = [T];
 export type SerializerSchema =
   | Primitive
-  | ["vector", xType: Primitive, yType: Primitive, zType: Primitive]
-  | ["cframe", xType: Primitive, yType: Primitive, zType: Primitive]
+  | ["vector", xType: Primitive<IntType>, yType: Primitive<IntType>, zType: Primitive<IntType>]
+  | ["cframe", xType: Primitive<IntType>, yType: Primitive<IntType>, zType: Primitive<IntType>]
   | ["object", [fieldName: string, fieldType: SerializerSchema][]]
-  | ["list", elementType: SerializerSchema, sizeType: Primitive]
-  | ["string", sizeType: Primitive]
+  | ["list", elementType: SerializerSchema, sizeType: Primitive<IntType>]
+  | ["string", sizeType: Primitive<IntType>]
   | ["blob", defined]
   | [Modifiers, SerializerSchema];
 

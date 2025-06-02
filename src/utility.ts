@@ -1,5 +1,36 @@
+import type { IntType, Primitive } from "./types";
+
 const { floor, log, huge: INF } = math;
 const NaN = 0 / 0;
+
+/**
+ * Returns a consistently ordered array for a specific Enum.
+ *
+ * We can't send Enum values over the network as the values aren't always within the 8 bit limit,
+ * so instead we send the EnumItem's position in the array returned here.
+ */
+export function getSortedEnumItems(enumObject: Enum) {
+  const enumItems = enumObject.GetEnumItems();
+  enumItems.sort((a, b) => a.Value < b.Value);
+
+  return enumItems;
+}
+
+export function getIntTypeSize([kind]: Primitive<IntType>) {
+  switch (kind) {
+    case "u8":
+    case "i8":
+      return 1;
+
+    case "u16":
+    case "i16":
+      return 2;
+
+    case "u32":
+    case "i32":
+      return 4;
+  }
+}
 
 export function sign(n: number): -1 | 1 {
   return n < 0 ? -1 : 1;
