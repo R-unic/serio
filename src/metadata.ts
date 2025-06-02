@@ -56,6 +56,8 @@ export type SerializerMetadata<T> = unknown extends T
   ? [ExtractKeys<DataTypes, T>]
   : ["_list", T] extends [keyof T, { _list?: [infer V, infer Size] }]
   ? ["list", SerializerMetadata<V>, SerializerMetadata<Size>]
+  : ["_packed", T] extends [keyof T, { _packed?: [infer V] }]
+  ? ["packed", SerializerMetadata<V>]
   : [T] extends [EnumItem]
   ? ["enum", GetEnumType<T>]
   : true extends HasNominal<keyof T>

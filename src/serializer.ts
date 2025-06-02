@@ -1,14 +1,15 @@
 
 import { f32ToF16, f32ToF24, getIntTypeSize as sizeOfIntType, sign } from "./utility";
-import type { SerializerSchema, SerializedData, ProcessedInfo } from "./types";
+import type { ProcessedInfo } from "./info-processing";
+import type { SerializerSchema, SerializedData } from "./types";
 
-const { ceil, log, map, pi: PI } = math;
+const { min, max, ceil, log, map, pi: PI } = math;
 const toAxisAngle = CFrame.identity.ToAxisAngle as (cf: CFrame) => ReturnType<CFrame["ToAxisAngle"]>;
 
 export function getSerializeFunction<T>(
-  { schema, containsPacking, minimumPackedBits, sortedEnums }: ProcessedInfo
+  { schema, containsPacking, containsUnknownPacking, minimumPackedBits, minimumPackedBytes, sortedEnums }: ProcessedInfo
 ): (value: T) => SerializedData {
-  // const bits = table.create<boolean>(1);
+  let bits = table.create<boolean>(minimumPackedBits);
   let currentSize = 2 ** 8;
   let buf = buffer.create(currentSize);
   let offset!: number;
@@ -85,6 +86,11 @@ export function getSerializeFunction<T>(
         break;
       }
       case "bool": {
+        if (packing) {
+          bits.push(value as never);
+          break;
+        }
+
         allocate(1);
         buffer.writeu8(buf, currentOffset, value ? 1 : 0);
         break;
@@ -173,14 +179,28 @@ export function getSerializeFunction<T>(
       case "optional": {
         const [_, valueMeta] = meta;
         const exists = value !== undefined;
-        allocate(1);
+        if (packing) {
+          bits.push(exists);
+          if (exists)
+            serialize(value, valueMeta);
 
-        if (!exists)
-          buffer.writeu8(buf, currentOffset, 0);
-        else {
-          buffer.writeu8(buf, currentOffset, 1);
-          serialize(value, valueMeta);
+          break;
         }
+
+        allocate(1);
+        buffer.writeu8(buf, currentOffset, exists ? 1 : 0);
+        if (exists)
+          serialize(value, valueMeta);
+
+        break;
+      }
+      case "packed": {
+        const [_, innerType] = meta;
+        const enclosingPacking = packing;
+        packing = true;
+
+        serialize(value, innerType);
+        packing = enclosingPacking;
         break;
       }
 
@@ -191,17 +211,63 @@ export function getSerializeFunction<T>(
     }
   }
 
+  function writeBits(buf: buffer, offset: number, bitOffset: number, bytes: number, variable: boolean): void {
+    const bitSize = bits.size();
+    for (const byte of $range(0, bytes - 1)) {
+      let currentByte = 0;
+      for (const bit of $range(variable ? 1 : 0, min(7, bitSize - bitOffset))) {
+        currentByte += (bits[bitOffset] ? 1 : 0) << bit;
+        bitOffset += 1;
+      }
+
+      if (variable && byte !== bytes - 1)
+        currentByte += 1;
+
+      buffer.writeu8(buf, offset, currentByte);
+      offset += 1;
+    }
+  }
+
+  function calculatePackedBytes(): LuaTuple<[number, number, number]> {
+    const minimumBytes = minimumPackedBytes;
+    if (!containsUnknownPacking)
+      return $tuple(minimumBytes, 0, minimumBytes);
+
+    const variableBytes = max(1, ceil((bits.size() - minimumBytes * 8) / 7));
+    const totalByteCount = minimumBytes + variableBytes;
+    return $tuple(minimumBytes, variableBytes, totalByteCount);
+  }
+
   return (value: T) => {
     offset = 0;
     blobs = [];
+    bits = [];
     serialize(value, schema);
 
-    const trimmed = buffer.create(offset);
-    buffer.copy(trimmed, 0, buf, 0, offset);
+    if (!containsPacking) {
+      const trimmed = buffer.create(offset);
+      buffer.copy(trimmed, 0, buf, 0, offset);
 
-    return {
-      buf: buffer.len(trimmed) === 0 ? undefined : trimmed,
-      blobs: blobs.isEmpty() ? undefined : blobs
-    };
+      return createSerializedData(trimmed, blobs);
+    }
+
+    const [minimumBytes, variableBytes, totalBytes] = calculatePackedBytes();
+    const trimmed = buffer.create(offset + totalBytes);
+    buffer.copy(trimmed, totalBytes, buf, 0, offset);
+
+    if (minimumBytes > 0)
+      writeBits(trimmed, 0, 0, minimumBytes, false);
+
+    if (variableBytes > 0)
+      writeBits(trimmed, minimumBytes, minimumBytes * 8, variableBytes, true);
+
+    return createSerializedData(trimmed, blobs);
+  };
+}
+
+function createSerializedData(trimmed: buffer, blobs: defined[]): SerializedData {
+  return {
+    buf: buffer.len(trimmed) === 0 ? undefined : trimmed,
+    blobs: blobs.isEmpty() ? undefined : blobs
   };
 }

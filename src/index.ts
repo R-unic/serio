@@ -2,9 +2,9 @@ import type { Modding } from "@flamework/core";
 
 import { getSerializeFunction } from "./serializer";
 import { getDeserializeFunction } from "./deserializer";
+import { processInfo, type ProcessedInfo } from "./info-processing";
 import type { SerializerMetadata } from "./metadata";
-import type { ProcessedInfo, SerializedData, SerializerSchema } from "./types";
-import { processInfo } from "./info-processing";
+import type { SerializedData } from "./types";
 
 class Serializer<T> {
   public readonly serialize: (value: T) => SerializedData;

@@ -1,12 +1,15 @@
-import type { ProcessedInfo, SerializedData, SerializerSchema } from "./types";
 import { getIntTypeSize, readF16, readF24, sign } from "./utility";
+import type { ProcessedInfo } from "./info-processing";
+import type { IntType, Primitive, SerializedData, SerializerSchema } from "./types";
 
-const { map, pi: PI } = math;
+const { ceil, map, pi: PI } = math;
 const { fromAxisAngle } = CFrame;
 
 export function getDeserializeFunction<T>(
-  { schema, containsPacking, minimumPackedBits, sortedEnums }: ProcessedInfo
+  { schema, containsPacking, containsUnknownPacking, minimumPackedBits, minimumPackedBytes, sortedEnums }: ProcessedInfo
 ): (data: SerializedData) => T {
+  let bits = table.create<boolean>(ceil(minimumPackedBits / 8) * 8);
+  let bitIndex = 0;
   let buf!: buffer;
   let offset!: number;
   let blobs: defined[] | undefined;
@@ -45,6 +48,9 @@ export function getDeserializeFunction<T>(
         offset += 4;
         return buffer.readf32(buf, currentOffset);
       case "bool":
+        if (packing)
+          return bits[bitIndex++];
+
         offset += 1;
         return buffer.readu8(buf, currentOffset) === 1;
       case "string": {
@@ -71,33 +77,7 @@ export function getDeserializeFunction<T>(
       }
       case "cframe": {
         const [_, xType, yType, zType] = meta;
-
-        const mappedX = buffer.readu16(buf, currentOffset);
-        let mappedY = buffer.readi16(buf, currentOffset + 2);
-        const mappedAngle = buffer.readu16(buf, currentOffset + 4);
-        offset += 6;
-
-        const zSign = sign(mappedY);
-        mappedY *= zSign;
-
-        const max16Bits = 2 ** 16 - 1;
-        const axisX = map(mappedX, 0, max16Bits, -1, 1);
-        let derivedMaximumSquared = 1 - axisX ** 2;
-        const derivedMaximum = derivedMaximumSquared ** 0.5;
-        const axisY = map(mappedY, 0, 2 ** 15 - 1, -derivedMaximum, derivedMaximum);
-        derivedMaximumSquared -= axisY ** 2;
-
-        const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
-        const axis = vector.create(axisX, axisY, axisZ) as unknown as Vector3;
-        const angle = map(mappedAngle, 0, max16Bits, 0, PI);
-        const axisAngle = fromAxisAngle(axis, angle);
-
-        const x = deserialize(xType) as number;
-        const y = deserialize(yType) as number;
-        const z = deserialize(zType) as number;
-        const position = vector.create(x, y, z) as unknown as Vector3;
-
-        return axisAngle.add(position);
+        return deserializeCFrame(xType, yType, zType);
       }
 
       case "list": {
@@ -121,17 +101,80 @@ export function getDeserializeFunction<T>(
 
       case "optional": {
         const [_, valueMeta] = meta;
-        offset += 1;
+        const exists = packing
+          ? bits[bitIndex++]
+          : buffer.readu8(buf, offset++) === 1;
 
-        return buffer.readu8(buf, currentOffset) === 1
-          ? deserialize(valueMeta)
-          : undefined;
+        return exists ? deserialize(valueMeta) : undefined;
+      }
+      case "packed": {
+        const [_, innerType] = meta;
+        const enclosingPacking = packing;
+        packing = true;
+
+        const value = deserialize(innerType);
+        packing = enclosingPacking;
+
+        return value;
       }
 
       case "blob":
         return blobs![blobIndex++];
     }
+  }
 
+  function deserializeCFrame(xType: Primitive<IntType>, yType: Primitive<IntType>, zType: Primitive<IntType>) {
+    const currentOffset = offset;
+    const mappedX = buffer.readu16(buf, currentOffset);
+    let mappedY = buffer.readi16(buf, currentOffset + 2);
+    const mappedAngle = buffer.readu16(buf, currentOffset + 4);
+    offset += 6;
+
+    const zSign = sign(mappedY);
+    mappedY *= zSign;
+
+    const max16Bits = 2 ** 16 - 1;
+    const axisX = map(mappedX, 0, max16Bits, -1, 1);
+    let derivedMaximumSquared = 1 - axisX ** 2;
+    const derivedMaximum = derivedMaximumSquared ** 0.5;
+    const axisY = map(mappedY, 0, 2 ** 15 - 1, -derivedMaximum, derivedMaximum);
+    derivedMaximumSquared -= axisY ** 2;
+
+    const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
+    const axis = vector.create(axisX, axisY, axisZ) as unknown as Vector3;
+    const angle = map(mappedAngle, 0, max16Bits, 0, PI);
+    const axisAngle = fromAxisAngle(axis, angle);
+
+    const x = deserialize(xType) as number;
+    const y = deserialize(yType) as number;
+    const z = deserialize(zType) as number;
+    const position = vector.create(x, y, z) as unknown as Vector3;
+
+    return axisAngle.add(position);
+  }
+
+  function readBits(): void {
+    const guaranteedBytes = minimumPackedBytes;
+
+    while (true) {
+      const currentByte = buffer.readu8(buf, offset);
+      const guaranteedByte = offset < guaranteedBytes;
+
+      for (const bit of $range(guaranteedByte ? 0 : 1, 7)) {
+        const value = (currentByte >>> bit) % 2 === 1;
+        bits.push(value);
+      }
+
+      offset += 1;
+
+      // Variable bit indicated the end.
+      if (!guaranteedByte && currentByte % 2 === 0)
+        break;
+
+      // We only have guaranteed bits and we reached the end.
+      if (!containsUnknownPacking && offset === guaranteedBytes)
+        break;
+    }
   }
 
   return (data: SerializedData) => {
@@ -141,6 +184,12 @@ export function getDeserializeFunction<T>(
     } = data);
     offset = 0;
     blobIndex = 0;
+    bitIndex = 0;
+
+    if (containsPacking) {
+      bits = [];
+      readBits();
+    }
 
     return deserialize(schema) as T;
   };

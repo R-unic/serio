@@ -28,3 +28,5 @@ export type Transform<
 
 /** T[] */
 export type List<T, LengthType extends AnySize> = T[] & { _list?: [T, LengthType] };
+
+export type Packed<T> = T & { _packed?: [T] };

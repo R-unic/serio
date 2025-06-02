@@ -22,12 +22,3 @@ export type SerializerSchema =
   | ["enum", string]
   | ["blob", defined]
   | [Modifiers, SerializerSchema];
-
-export interface ProcessedInfo {
-  readonly schema: SerializerSchema;
-  readonly containsPacking: boolean;
-  readonly containsUnknownPacking: boolean;
-  readonly minimumPackedBits: number;
-  readonly minimumPackedBytes: number;
-  readonly sortedEnums: Record<string, EnumItem[]>;
-}
