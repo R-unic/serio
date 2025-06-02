@@ -5,7 +5,7 @@ const { map, pi: PI } = math;
 const { fromAxisAngle } = CFrame;
 
 export function getDeserializeFunction<T>(
-  { schema, containsPacking, minimumPackedBits }: ProcessedInfo
+  { schema, containsPacking, minimumPackedBits, sortedEnums }: ProcessedInfo
 ): (data: SerializedData) => T {
   let buf!: buffer;
   let offset!: number;
@@ -54,6 +54,12 @@ export function getDeserializeFunction<T>(
         offset += length;
 
         return buffer.readstring(buf, currentOffset + lengthSize, length);
+      }
+      case "enum": {
+        const index = buffer.readu8(buf, currentOffset);
+        offset += 1;
+
+        return sortedEnums[meta[1]!][index];
       }
       case "vector": {
         const [_, xType, yType, zType] = meta;

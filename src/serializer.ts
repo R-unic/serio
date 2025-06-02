@@ -6,7 +6,7 @@ const { ceil, log, map, pi: PI } = math;
 const toAxisAngle = CFrame.identity.ToAxisAngle as (cf: CFrame) => ReturnType<CFrame["ToAxisAngle"]>;
 
 export function getSerializeFunction<T>(
-  { schema, containsPacking, minimumPackedBits }: ProcessedInfo
+  { schema, containsPacking, minimumPackedBits, sortedEnums }: ProcessedInfo
 ): (value: T) => SerializedData {
   // const bits = table.create<boolean>(1);
   let currentSize = 2 ** 8;
@@ -100,7 +100,10 @@ export function getSerializeFunction<T>(
         break;
       }
       case "enum": {
-        // buffer.writeu8();
+        const enumIndex = sortedEnums[meta[1]!].indexOf(value as never);
+
+        allocate(1);
+        buffer.writeu8(buf, currentOffset, enumIndex);
         break;
       }
       case "vector": {
