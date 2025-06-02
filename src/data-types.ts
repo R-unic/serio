@@ -8,7 +8,20 @@ export type f16 = number & { _f16?: never };
 export type f24 = number & { _f24?: never };
 export type f32 = number & { _f32?: never };
 export type f64 = number & { _f64?: never };
-export type Vector<T extends number> = Vector3 & { _vector?: [T] };
-export type List<T, Size extends number> = T[] & { _list?: [T, Size] };
 
-export type Packed<T> = T & { _packed?: [T] };
+/** Vector3 */
+export type Vector<
+  X extends number = f32,
+  Y extends number = X,
+  Z extends number = X
+> = Vector3 & { _vector?: [X, Y, Z] };
+
+/** CFrame */
+export type Transform<
+  X extends number = f32,
+  Y extends number = X,
+  Z extends number = X
+> = CFrame & { _cf?: [X, Y, Z] };
+
+/** T[] */
+export type List<T, Size extends number> = T[] & { _list?: [T, Size] };

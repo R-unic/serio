@@ -1,6 +1,10 @@
 const { floor, log, huge: INF } = math;
 const NaN = 0 / 0;
 
+export function sign(n: number): -1 | 1 {
+  return n < 0 ? -1 : 1;
+}
+
 export function readF16(buf: buffer, offset = 0): number {
   const low = buffer.readu8(buf, offset);
   const high = buffer.readu8(buf, offset + 1);

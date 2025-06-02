@@ -11,8 +11,6 @@ interface DataTypes {
 
 export type SerializerMetadata<T> = unknown extends T
   ? ["optional", ["blob"]]
-  : ["_packed", T] extends [keyof T, { _packed?: [infer V] }]
-  ? ["packed", SerializerMetadata<V>]
   : undefined extends T
   ? ["optional", SerializerMetadata<NonNullable<T>>]
   : IsNumber<T, "f64"> extends true
@@ -41,8 +39,10 @@ export type SerializerMetadata<T> = unknown extends T
   ? ["f64"]
   : [T] extends [string]
   ? ["string"]
-  : ["_vector", T] extends [keyof T, { _vector?: [infer V] }]
-  ? ["vector", SerializerMetadata<V>]
+  : ["_vector", T] extends [keyof T, { _vector?: [infer X, infer Y, infer Z] }]
+  ? ["vector", SerializerMetadata<X>, SerializerMetadata<Y>, SerializerMetadata<Z>]
+  : ["_cf", T] extends [keyof T, { _cf?: [infer X, infer Y, infer Z] }]
+  ? ["cframe", SerializerMetadata<X>, SerializerMetadata<Y>, SerializerMetadata<Z>]
   : [T] extends [DataTypes[keyof DataTypes]]
   ? [ExtractKeys<DataTypes, T>]
   : ["_list", T] extends [keyof T, { _list?: [infer V, infer Size] }]

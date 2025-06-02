@@ -1,8 +1,9 @@
 
-import { f32ToF16, f32ToF24 } from "./utility";
+import { f32ToF16, f32ToF24, sign } from "./utility";
 import type { SerializerSchema, SerializedData, ProcessedInfo } from "./types";
 
-const { ceil, log } = math;
+const { ceil, log, map, pi: PI } = math;
+const toAxisAngle = CFrame.identity.ToAxisAngle as (cf: CFrame) => ReturnType<CFrame["ToAxisAngle"]>;
 
 export function getSerializeFunction<T>(
   { schema, containsPacking, minimumPackedBits }: ProcessedInfo
@@ -15,16 +16,13 @@ export function getSerializeFunction<T>(
   let packing = false;
 
   function allocate(size: number): void {
-    offset += size;
+    if ((offset += size) <= currentSize) return;
 
-    if (offset > currentSize) {
-      const newSize = 2 ** ceil(log(offset) / log(2));
-      const oldBuffer = buf;
-
-      currentSize = newSize;
-      buf = buffer.create(newSize);
-      buffer.copy(buf, 0, oldBuffer);
-    }
+    const newSize = 2 ** ceil(log(offset) / log(2));
+    const oldBuffer = buf;
+    currentSize = newSize;
+    buf = buffer.create(newSize);
+    buffer.copy(buf, 0, oldBuffer);
   }
 
   function serialize(value: unknown, meta: SerializerSchema): void {
@@ -92,11 +90,47 @@ export function getSerializeFunction<T>(
         break;
       }
       case "vector": {
-        const coordSize = meta[1]!;
+        const [_, xType, yType, zType] = meta;
         const vector = value as Vector3;
-        serialize(vector.X, coordSize);
-        serialize(vector.Y, coordSize);
-        serialize(vector.Z, coordSize);
+        serialize(vector.X, xType);
+        serialize(vector.Y, yType);
+        serialize(vector.Z, zType);
+        break;
+      }
+      case "cframe": {
+        const [_, xType, yType, zType] = meta;
+        const cframe = value as CFrame;
+
+        const [axis, angle] = toAxisAngle(cframe);
+        const zSign = sign(axis.Z);
+        const xAxis = axis.X;
+        const maxY = (1 - xAxis ** 2) ** 0.5;
+        const mappedX = map(xAxis, -1, 1, 0, 2 ** 16 - 1);
+        const mappedY = map(axis.Y, -maxY, maxY, 0, 2 ** 15 - 1) * zSign;
+        const mappedAngle = map(angle, 0, PI, 0, 2 ** 16 - 1)
+
+        {
+          let length = buffer.len(buf);
+          const minimumSize = 9;
+          const targetOffset = currentOffset + minimumSize;
+          if (targetOffset > length) {
+            let newBytes = minimumSize * 2;
+            length *= 2;
+            while (targetOffset > length) {
+              length *= 2;
+              newBytes *= 2;
+            }
+
+            allocate(newBytes);
+          }
+        }
+
+        serialize(mappedX, ["u16"]);
+        serialize(mappedY, ["i16"]);
+        serialize(mappedAngle, ["u16"]);
+        serialize(cframe.X, xType);
+        serialize(cframe.Y, yType);
+        serialize(cframe.Z, zType);
         break;
       }
       case "list": {
@@ -148,6 +182,9 @@ export function getSerializeFunction<T>(
     const trimmed = buffer.create(offset);
     buffer.copy(trimmed, 0, buf, 0, offset);
 
-    return { buf: trimmed, blobs };
+    return {
+      buf: buffer.len(trimmed) === 0 ? undefined : trimmed,
+      blobs: blobs.isEmpty() ? undefined : blobs
+    };
   };
 }

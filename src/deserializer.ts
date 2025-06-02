@@ -1,5 +1,8 @@
 import type { ProcessedInfo, SerializedData, SerializerSchema } from "./types";
-import { readF16, readF24 } from "./utility";
+import { readF16, readF24, sign } from "./utility";
+
+const { map, pi: PI } = math;
+const { fromAxisAngle } = CFrame;
 
 export function getDeserializeFunction<T>(
   { schema, containsPacking, minimumPackedBits }: ProcessedInfo
@@ -45,12 +48,42 @@ export function getDeserializeFunction<T>(
         offset += 1;
         return buffer.readu8(buf, currentOffset) === 1;
       case "vector": {
-        const coordSize = meta[1]!;
-        const x = deserialize(coordSize) as number;
-        const y = deserialize(coordSize) as number;
-        const z = deserialize(coordSize) as number;
+        const [_, xType, yType, zType] = meta;
+        const x = deserialize(xType) as number;
+        const y = deserialize(yType) as number;
+        const z = deserialize(zType) as number;
 
-        return new Vector3(x, y, z);
+        return vector.create(x, y, z);
+      }
+      case "cframe": {
+        const [_, xType, yType, zType] = meta;
+
+        const mappedX = buffer.readu16(buf, currentOffset);
+        let mappedY = buffer.readi16(buf, currentOffset + 2);
+        const mappedAngle = buffer.readu16(buf, currentOffset + 4);
+        offset += 6;
+
+        const zSign = sign(mappedY);
+        mappedY *= zSign;
+
+        const max16Bits = 2 ** 16 - 1;
+        const axisX = map(mappedX, 0, max16Bits, -1, 1);
+        let derivedMaximumSquared = 1 - axisX ** 2;
+        const derivedMaximum = derivedMaximumSquared ** 0.5;
+        const axisY = map(mappedY, 0, 2 ** 15 - 1, -derivedMaximum, derivedMaximum);
+        derivedMaximumSquared -= axisY ** 2;
+
+        const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
+        const axis = vector.create(axisX, axisY, axisZ) as unknown as Vector3;
+        const angle = map(mappedAngle, 0, max16Bits, 0, PI);
+        const axisAngle = fromAxisAngle(axis, angle);
+
+        const x = deserialize(xType) as number;
+        const y = deserialize(yType) as number;
+        const z = deserialize(zType) as number;
+        const position = vector.create(x, y, z) as unknown as Vector3;
+
+        return axisAngle.add(position);
       }
 
       case "list": {
@@ -88,8 +121,10 @@ export function getDeserializeFunction<T>(
   }
 
   return (data: SerializedData) => {
-    blobs = data.blobs;
-    buf = data.buf;
+    ({
+      buf = buffer.create(0),
+      blobs =[]
+    } = data);
     offset = 0;
     blobIndex = 0;
 
