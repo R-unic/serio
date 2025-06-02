@@ -99,7 +99,6 @@ export function getSerializeFunction<T>(
         serialize(vector.Z, coordSize);
         break;
       }
-
       case "list": {
         const [_, elementMeta, sizeMeta] = meta;
         const list = value as unknown[];
@@ -131,6 +130,11 @@ export function getSerializeFunction<T>(
           buffer.writeu8(buf, currentOffset, 1);
           serialize(value, valueMeta);
         }
+        break;
+      }
+
+      case "blob": {
+        blobs.push(value!);
         break;
       }
     }

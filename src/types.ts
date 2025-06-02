@@ -12,12 +12,13 @@ export type PrimitiveDataType =
   | "string";
 
 export type Primitive = [PrimitiveDataType];
-export type SerializerSchema = Primitive |
-["vector", coordSize: Primitive] |
-["object", [fieldName: string, SerializerSchema][]] |
-["list", element: SerializerSchema, size: Primitive] |
-[Modifiers, SerializerSchema];
-
+export type SerializerSchema =
+  | Primitive
+  | ["vector", coordSize: Primitive]
+  | ["object", [fieldName: string, SerializerSchema][]]
+  | ["list", element: SerializerSchema, size: Primitive]
+  | ["blob", Instance]
+  | [Modifiers, SerializerSchema];
 
 export interface ProcessedInfo {
   readonly schema: SerializerSchema;

@@ -75,9 +75,14 @@ export function getDeserializeFunction<T>(
       case "optional": {
         const [_, valueMeta] = meta;
         offset += 1;
-        const exists = buffer.readu8(buf, currentOffset);
-        return exists === 1 ? deserialize(valueMeta) : undefined;
+
+        return buffer.readu8(buf, currentOffset) === 1
+          ? deserialize(valueMeta)
+          : undefined;
       }
+
+      case "blob":
+        return blobs![blobIndex++];
     }
 
   }
