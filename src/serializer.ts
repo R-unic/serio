@@ -142,8 +142,6 @@ export function getSerializeFunction<T>(
         if (packing) {
           const index = COMMON_VECTORS.indexOf(vector);
           const isOptimized = index !== -1;
-          print("optimized:", isOptimized)
-          print(bits.push(isOptimized));
 
           if (isOptimized) {
             allocate(1);
