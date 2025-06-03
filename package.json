@@ -1,6 +1,6 @@
 {
   "name": "@rbxts/serio",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "out/init.lua",
   "scripts": {
     "build": "rbxtsc",
