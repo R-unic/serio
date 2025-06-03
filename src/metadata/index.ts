@@ -1,4 +1,5 @@
-import type { f32, u32 } from "./data-types";
+import type { FindDiscriminator, IsDiscriminableUnion, IsLiteralUnion, IsUnion } from "./unions";
+import type { f32, u32 } from "../data-types";
 
 type IsNumber<T, K extends string> = `_${K}` extends keyof T ? true : false;
 type HasNominal<T> = T extends T ? (T extends `_nominal_${string}` ? true : never) : never;
@@ -11,9 +12,13 @@ interface DataTypes {
   color: Color3;
 }
 
-
-export type SerializerMetadata<T> = unknown extends T
+export type SerializerMetadata<T> =
+  IsLiteralUnion<T> extends true
+  ? ["literal", NonNullable<T>[], true extends IsUnion<T> ? (undefined extends T ? 1 : 0) : -1]
+  : unknown extends T
   ? ["optional", ["blob"]]
+  : ["_packed", T] extends [keyof T, { _packed?: [infer V] }]
+  ? ["packed", SerializerMetadata<V>]
   : undefined extends T
   ? ["optional", SerializerMetadata<NonNullable<T>>]
   : IsNumber<T, "f64"> extends true
@@ -56,10 +61,18 @@ export type SerializerMetadata<T> = unknown extends T
   ? [ExtractKeys<DataTypes, T>]
   : ["_list", T] extends [keyof T, { _list?: [infer V, infer Size] }]
   ? ["list", SerializerMetadata<V>, SerializerMetadata<Size>]
-  : ["_packed", T] extends [keyof T, { _packed?: [infer V] }]
-  ? ["packed", SerializerMetadata<V>]
   : [T] extends [EnumItem]
   ? ["enum", GetEnumType<T>]
+  : IsDiscriminableUnion<T> extends true
+  ? [
+    "union",
+    FindDiscriminator<T>,
+    FindDiscriminator<T> extends infer D
+    ? (T extends T ? [T[D & keyof T], SerializerMetadata<Omit<T, D & keyof T>>] : never)[]
+    : never,
+    // This is the byte size length. This is annoying (and slow) to calculate in TS, so it's done at runtime.
+    -1,
+  ]
   : true extends HasNominal<keyof T>
   ? ["blob"]
   : T extends object

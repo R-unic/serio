@@ -135,7 +135,6 @@ export function getDeserializeFunction<T>(
 
         return deserializeCFrame(xType, yType, zType);
       }
-
       case "list": {
         const [_, elementMeta, sizeMeta] = meta;
         const size = deserialize(sizeMeta ?? ["u32"]) as number;
@@ -153,6 +152,39 @@ export function getDeserializeFunction<T>(
           obj[name] = deserialize(fieldMeta);
 
         return obj;
+      }
+      case "literal": {
+        const [_, literals, byteSize] = meta;
+        if (byteSize === 1) {
+          offset += 1;
+          return literals[buffer.readu8(buf, currentOffset)];
+        } else if (byteSize === 2) {
+          offset += 2;
+          return literals[buffer.readu16(buf, currentOffset)];
+        } else if (byteSize === -1)
+          return literals[bits[bitIndex++] ? 0 : 1];
+
+        return literals[0];
+      }
+      case "union": {
+        const [_, tagName, tagged, byteSize] = meta;
+        let tagIndex;
+        if (byteSize === 1) {
+          offset += 1;
+          tagIndex = buffer.readu8(buf, currentOffset);
+        } else if (byteSize === 2) {
+          offset += 2;
+          tagIndex = buffer.readu16(buf, currentOffset);
+        } else {
+          bitIndex++;
+          tagIndex = bits[bitIndex - 1] ? 0 : 1;
+        }
+
+        const [tagValue, tagMetadata] = tagged[tagIndex];
+        const object = deserialize(tagMetadata);
+        (object as Record<string, unknown>)[tagName] = tagValue;
+
+        return object;
       }
 
       case "optional": {

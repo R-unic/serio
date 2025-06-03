@@ -57,7 +57,44 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       schema = [kind, schemaPass(schema[1], info)];
       break;
     }
+    case "union": {
+      const [_, name, options] = schema;
+      const optionsSize = options.size();
+      // Whenever we only have two options, we can use a single bit.
+      // We use a byte size of `-1` to indicate a packable union.
+      const isPackable = (info.flags & IterationFlags.Packed) !== 0 && optionsSize === 2;
+      if (isPackable)
+        addPackedBit(info);
 
+      info.flags |= IterationFlags.SizeUnknown;
+      schema = [
+        kind,
+        name,
+        options.map(([key, schema]): [unknown, SerializerSchema] => [key, schemaPass(schema, info)]),
+        isPackable ? -1 : optionsSize <= 256 ? 1 : 2,
+      ];
+      break;
+    }
+    case "literal": {
+      const [_, possibleValues, size] = schema;
+      const possibleValuesSize = possibleValues.size();
+      // Whenever we only have two options, we can use a single bit.
+      // We exclude undefined using `data[2] === 0` as it complicates thing.
+      if ((info.flags & IterationFlags.Packed) !== 0 && possibleValuesSize === 2 && size === 0) {
+        addPackedBit(info);
+
+        // We use `-1` as the size to signify that this union can be packed,
+        // as it's not a valid value otherwise.
+        return [kind, possibleValues, -1];
+      }
+
+      // Since `undefined` is not included in the size of `data[1]`,
+      // we add the existing value of `data[3]` (which is 1 if undefined is in the union) to `data[1]`
+      // to determine the final required size.
+      // A size of -1 means this isn't a union.
+      schema = [kind, possibleValues, size === -1 ? 0 : size + possibleValuesSize <= 256 ? 1 : 2];
+      break;
+    }
     case "object": {
       const fields = schema[1];
       const newFields = fields.map<(typeof fields)[number]>(([name, meta]) => [name, schemaPass(meta, info)]);

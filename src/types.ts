@@ -20,5 +20,7 @@ export type SerializerSchema =
   | ["list", elementType: SerializerSchema, sizeType: Primitive<IntType>]
   | ["string", sizeType: Primitive<IntType>]
   | ["enum", string]
+  | ["union", string, [unknown, SerializerSchema][], number]
+  | ["literal", defined[], number]
   | ["blob", defined]
   | [Modifiers, SerializerSchema];

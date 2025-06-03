@@ -252,6 +252,50 @@ export function getSerializeFunction<T>(
 
         break;
       }
+      case "union": {
+        const [_, tagName, tagged, byteSize] = meta;
+        const objectTag = (value as Map<unknown, unknown>).get(tagName);
+
+        let tagIndex = 0;
+        let tagMetadata!: SerializerSchema;
+        for (const i of $range(1, tagged.size())) {
+          const tagObject = tagged[i - 1];
+          if (tagObject[0] === objectTag) {
+            tagIndex = i - 1;
+            tagMetadata = tagObject[1];
+            break;
+          }
+        }
+
+        if (byteSize === 1) {
+          allocate(1);
+          buffer.writeu8(buf, currentOffset, tagIndex);
+        } else if (byteSize === 2) {
+          allocate(2);
+          buffer.writeu16(buf, currentOffset, tagIndex);
+        } else if (byteSize === -1)
+          bits.push(tagIndex === 0);
+
+        serialize(value, tagMetadata);
+        break;
+      }
+      case "literal": {
+        const [_, literals, byteSize] = meta;
+        if (byteSize === 1) {
+          const index = literals.indexOf(value as defined);
+
+          allocate(1);
+          buffer.writeu8(buf, currentOffset, index);
+        } else if (byteSize === 2) {
+          const index = literals.indexOf(value as defined);
+
+          allocate(2);
+          buffer.writeu16(buf, currentOffset, index);
+        } else if (byteSize === -1)
+          bits.push(value === literals[0]);
+
+        break;
+      }
 
       case "optional": {
         const [_, valueMeta] = meta;
