@@ -1,6 +1,6 @@
 
 import { f32ToF16, f32ToF24, sizeOfIntType, sign, CF__index } from "./utility";
-import { AXIS_ALIGNED_ORIENTATIONS } from "./constants";
+import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
 
@@ -27,8 +27,8 @@ export function getSerializeFunction<T>(
     buffer.copy(buf, 0, oldBuffer);
   }
 
-  function serialize(value: unknown, meta: SerializerSchema, newOffset = offset): void {
-    const currentOffset = newOffset;
+  function serialize(value: unknown, meta: SerializerSchema, serializeOffset = offset): void {
+    const currentOffset = serializeOffset;
 
     switch (meta[0]) {
       case "u8": {
@@ -116,6 +116,19 @@ export function getSerializeFunction<T>(
       case "vector": {
         const [_, xType, yType, zType] = meta;
         const vector = value as Vector3;
+        if (packing) {
+          const index = COMMON_VECTORS.indexOf(vector);
+          const isOptimized = index !== -1;
+          print("optimized:", isOptimized)
+          print(bits.push(isOptimized));
+
+          if (isOptimized) {
+            allocate(1);
+            buffer.writeu8(buf, currentOffset, index);
+            break;
+          }
+        }
+
         serialize(vector.X, xType);
         serialize(vector.Y, yType);
         serialize(vector.Z, zType);
@@ -149,13 +162,12 @@ export function getSerializeFunction<T>(
           } else
             packed += 0x1F;
 
-          const optimized = optimizedPosition || optimizedRotation;
-          bits.push(optimized);
-
-          allocate((optimized ? 1 : 0) + (optimizedPosition ? 0 : 12) + (optimizedRotation ? 0 : 6));
+          const isOptimized = optimizedPosition || optimizedRotation;
+          bits.push(isOptimized);
+          allocate((isOptimized ? 1 : 0) + (optimizedPosition ? 0 : 12) + (optimizedRotation ? 0 : 6));
 
           let newOffset = currentOffset;
-          if (optimized) {
+          if (isOptimized) {
             buffer.writeu8(buf, newOffset, packed);
             newOffset += 1;
           }

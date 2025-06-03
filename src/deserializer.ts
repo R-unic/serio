@@ -1,7 +1,7 @@
 import { sizeOfIntType, readF16, readF24, sign } from "./utility";
 import type { ProcessedInfo } from "./info-processing";
 import type { IntType, Primitive, SerializedData, SerializerSchema } from "./types";
-import { AXIS_ALIGNED_ORIENTATIONS } from "./constants";
+import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
 
 const { ceil, map, pi: PI } = math;
 const { fromAxisAngle } = CFrame;
@@ -70,10 +70,18 @@ export function getDeserializeFunction<T>(
       }
       case "vector": {
         const [_, xType, yType, zType] = meta;
+        if (packing) {
+          const isOptimized = bits[bitIndex++];
+          if (isOptimized) {
+            offset += 1;
+            const index = buffer.readu8(buf, currentOffset);
+            return COMMON_VECTORS[index];
+          }
+        }
+
         const x = deserialize(xType) as number;
         const y = deserialize(yType) as number;
         const z = deserialize(zType) as number;
-
         return vector.create(x, y, z);
       }
       case "cframe": {
