@@ -21,7 +21,7 @@ export type SerializerSchema =
   | ["tuple", elementTypes: SerializerSchema[], restElementType?: SerializerSchema]
   | ["string", sizeType: Primitive<IntType>]
   | ["set", elementType: SerializerSchema, lengthType: Primitive<IntType>]
-  | ["map", keyType: SerializerSchema, valueType: SerializerSchema]
+  | ["map", keyType: SerializerSchema, valueType: SerializerSchema, lengthType: Primitive<IntType>]
   | ["enum", string]
   | ["union", string, [unknown, SerializerSchema][], number]
   | ["literal", defined[], number]

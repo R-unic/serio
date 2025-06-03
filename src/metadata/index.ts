@@ -72,14 +72,16 @@ export type SerializerMetadata<T> =
   ? ["set", SerializerMetadata<V>, SerializerMetadata<LengthType>]
   : [T] extends [ReadonlySet<infer V>]
   ? ["set", SerializerMetadata<V>, SerializerMetadata<u32>]
+  : ["_map", T] extends [keyof T, { _map?: [infer K, infer V, infer LengthType] }]
+  ? ["map", SerializerMetadata<K>, SerializerMetadata<V>, SerializerMetadata<LengthType>]
+  : [T] extends [ReadonlyMap<infer K, infer V>]
+  ? ["map", SerializerMetadata<K>, SerializerMetadata<V>, SerializerMetadata<u32>]
   : [T] extends [DataTypes[keyof DataTypes]]
   ? [ExtractKeys<DataTypes, T>]
   : [T] extends [unknown[]]
   ? ListMetadata<T>
   : [T] extends [EnumItem]
   ? ["enum", GetEnumType<T>]
-  : [T] extends [ReadonlyMap<infer K, infer V>]
-  ? ["map", SerializerMetadata<K>, SerializerMetadata<V>]
   : IsDiscriminableUnion<T> extends true
   ? [
     "union",

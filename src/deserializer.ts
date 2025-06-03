@@ -214,6 +214,17 @@ export function getDeserializeFunction<T>(
 
         return set;
       }
+      case "map": {
+        const [_, keyType, valueType, lengthType] = meta;
+        const length = deserialize(lengthType) as number;
+        const map = new Map<unknown, unknown>;
+
+        if (length > 0)
+          for (const _ of $range(1, length))
+            map.set(deserialize(keyType), deserialize(valueType));
+
+        return map;
+      }
 
       case "optional": {
         const [_, valueMeta] = meta;

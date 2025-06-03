@@ -117,6 +117,18 @@ export function getSerializeFunction<T>(
 
         break;
       }
+      case "map": {
+        const [_, keyType, valueType, lengthType] = meta;
+        const map = value as Map<unknown, unknown>;
+
+        serialize(map.size(), lengthType);
+        for (const [key, value] of map) {
+          serialize(key, keyType);
+          serialize(value, valueType);
+        }
+
+        break;
+      }
       case "enum": {
         const enumIndex = sortedEnums[meta[1]!].indexOf(value as never);
 
