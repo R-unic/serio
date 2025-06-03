@@ -71,11 +71,16 @@ export function getDeserializeFunction<T>(
       case "vector": {
         const [_, xType, yType, zType] = meta;
         if (packing) {
-          const isOptimized = bits[bitIndex++];
+          const i = bitIndex++;
+          const isOptimized = bits[i];
+
           if (isOptimized) {
+            const packed = buffer.readu8(buf, currentOffset);
             offset += 1;
-            const index = buffer.readu8(buf, currentOffset);
-            return COMMON_VECTORS[index];
+
+            const index = packed;
+            if (index !== 0x20)
+              return COMMON_VECTORS[index];
           }
         }
 

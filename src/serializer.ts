@@ -140,12 +140,15 @@ export function getSerializeFunction<T>(
         const [_, xType, yType, zType] = meta;
         const vector = value as Vector3;
         if (packing) {
-          const index = COMMON_VECTORS.indexOf(vector);
-          const isOptimized = index !== -1;
+          // 1-6: special case index, 7-8: unused
+          const specialCase = COMMON_VECTORS.indexOf(vector);
+          const isOptimized = specialCase !== -1;
+          const packed = isOptimized ? specialCase : 0x20;
+          bits.push(isOptimized);
 
           if (isOptimized) {
             allocate(1);
-            buffer.writeu8(buf, currentOffset, index);
+            buffer.writeu8(buf, currentOffset, packed);
             break;
           }
         }
@@ -161,7 +164,6 @@ export function getSerializeFunction<T>(
 
         if (packing) {
           // 1-5: Orientation, 6-7: Position, 8: unused
-          print("current offset:", offset)
           let optimizedPosition = false;
           let optimizedRotation = false;
           let packed = 0;
@@ -217,14 +219,12 @@ export function getSerializeFunction<T>(
             newOffset += 6;
           }
 
-          print("offset before position serialization:", offset)
           if (!optimizedPosition) {
             serialize(cframe.X, xType, newOffset);
             serialize(cframe.Y, yType, newOffset + xSize);
             serialize(cframe.Z, zType, newOffset + xSize + ySize);
             offset -= positionBytes;
           }
-          print("new offset:", offset)
 
           break;
         }
