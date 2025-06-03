@@ -161,6 +161,7 @@ export function getSerializeFunction<T>(
 
         if (packing) {
           // 1-5: Orientation, 6-7: Position, 8: unused
+          print("current offset:", offset)
           let optimizedPosition = false;
           let optimizedRotation = false;
           let packed = 0;
@@ -185,7 +186,15 @@ export function getSerializeFunction<T>(
 
           const isOptimized = optimizedPosition || optimizedRotation;
           bits.push(isOptimized);
-          allocate((isOptimized ? 1 : 0) + (optimizedPosition ? 0 : 12) + (optimizedRotation ? 0 : 6));
+
+          const xSize = sizeOfNumberType(xType);
+          const ySize = sizeOfNumberType(yType);
+          const zSize = sizeOfNumberType(zType);
+          const headerBytes = isOptimized ? 1 : 0;
+          const rotationBytes = optimizedRotation ? 0 : 6;
+          const positionBytes = optimizedPosition ? 0 : xSize + ySize + zSize;
+          const totalBytes = headerBytes + rotationBytes + positionBytes;
+          allocate(totalBytes);
 
           let newOffset = currentOffset;
           if (isOptimized) {
@@ -208,14 +217,14 @@ export function getSerializeFunction<T>(
             newOffset += 6;
           }
 
+          print("offset before position serialization:", offset)
           if (!optimizedPosition) {
             serialize(cframe.X, xType, newOffset);
-            newOffset += sizeOfNumberType(xType);
-            serialize(cframe.Y, yType, newOffset);
-            newOffset += sizeOfNumberType(yType);
-            serialize(cframe.Z, zType, newOffset);
-            newOffset += sizeOfNumberType(zType);
+            serialize(cframe.Y, yType, newOffset + xSize);
+            serialize(cframe.Z, zType, newOffset + xSize + ySize);
+            offset -= positionBytes;
           }
+          print("new offset:", offset)
 
           break;
         }
@@ -228,26 +237,10 @@ export function getSerializeFunction<T>(
         const mappedY = map(axis.Y, -maxY, maxY, 0, 2 ** 15 - 1) * zSign;
         const mappedAngle = map(angle, 0, PI, 0, 2 ** 16 - 1);
 
-        {
-          let length = buffer.len(buf);
-          const minimumSize = 9;
-          const targetOffset = currentOffset + minimumSize;
-          if (targetOffset > length) {
-            let newBytes = minimumSize * 2;
-            length *= 2;
-            while (targetOffset > length) {
-              length *= 2;
-              newBytes *= 2;
-            }
-
-            allocate(newBytes);
-          }
-        }
-
+        allocate(6); // minimum
         buffer.writeu16(buf, currentOffset, mappedX);
         buffer.writei16(buf, currentOffset + 2, mappedY);
         buffer.writeu16(buf, currentOffset + 4, mappedAngle);
-        offset += 6;
 
         serialize(cframe.X, xType);
         serialize(cframe.Y, yType);
