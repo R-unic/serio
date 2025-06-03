@@ -6,7 +6,7 @@ import { processInfo, type ProcessedInfo } from "./info-processing";
 import type { SerializerMetadata } from "./metadata";
 import type { SerializedData } from "./types";
 
-class Serializer<T> {
+export class Serializer<T> {
   public readonly serialize: (value: T) => SerializedData;
   public readonly deserialize: (data: SerializedData) => T;
 
@@ -17,6 +17,7 @@ class Serializer<T> {
 }
 
 export * from "./data-types";
+export { SerializerMetadata } from "./metadata";
 
 /** @metadata macro */
 export default function createSerializer<T>(meta?: Modding.Many<SerializerMetadata<T>>): Serializer<T> {
