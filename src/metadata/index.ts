@@ -68,12 +68,18 @@ export type SerializerMetadata<T> =
   ? ["cframe", SerializerMetadata<X>, SerializerMetadata<Y>, SerializerMetadata<Z>]
   : [T] extends [CFrame]
   ? ["cframe", SerializerMetadata<f32>, SerializerMetadata<f32>, SerializerMetadata<f32>]
+  : ["_set", T] extends [keyof T, { _set?: [infer V, infer LengthType] }]
+  ? ["set", SerializerMetadata<V>, SerializerMetadata<LengthType>]
+  : [T] extends [ReadonlySet<infer V>]
+  ? ["set", SerializerMetadata<V>, SerializerMetadata<u32>]
   : [T] extends [DataTypes[keyof DataTypes]]
   ? [ExtractKeys<DataTypes, T>]
   : [T] extends [unknown[]]
   ? ListMetadata<T>
   : [T] extends [EnumItem]
   ? ["enum", GetEnumType<T>]
+  : [T] extends [ReadonlyMap<infer K, infer V>]
+  ? ["map", SerializerMetadata<K>, SerializerMetadata<V>]
   : IsDiscriminableUnion<T> extends true
   ? [
     "union",

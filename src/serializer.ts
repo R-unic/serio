@@ -106,6 +106,17 @@ export function getSerializeFunction<T>(
         buffer.writestring(buf, currentOffset + lengthSize, str);
         break;
       }
+      case "set": {
+        // We could just generate `Map<V, true>` for sets, but this is more efficient as it omits serializing a boolean per value.
+        const [_, valueType, lengthType] = meta;
+
+        const set = value as Set<unknown>;
+        serialize(set.size(), lengthType);
+        for (const elementValue of set)
+          serialize(elementValue, valueType);
+
+        break;
+      }
       case "enum": {
         const enumIndex = sortedEnums[meta[1]!].indexOf(value as never);
 

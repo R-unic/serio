@@ -203,6 +203,17 @@ export function getDeserializeFunction<T>(
 
         return tuple;
       }
+      case "set": {
+        const [_, elementType, lengthType] = meta;
+        const length = deserialize(lengthType) as number;
+        const set = new Set<unknown>;
+
+        if (length > 0)
+          for (const _ of $range(1, length))
+            set.add(deserialize(elementType));
+
+        return set;
+      }
 
       case "optional": {
         const [_, valueMeta] = meta;

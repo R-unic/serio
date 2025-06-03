@@ -28,5 +28,7 @@ export type Transform<
 
 /** T[] */
 export type List<T, LengthType extends AnySize = u32> = T[] & { /* @hidden */ _list?: [T, LengthType] };
+export type HashSet<T, LengthType extends AnySize = u32> = Set<T> & { /* @hidden */ _set?: [T, LengthType] };
+// export type HashMap<T, LengthType extends AnySize = u32> = Set<T> & { /* @hidden */ _list?: [T, LengthType] };
 
 export type Packed<T> = T & { /* @hidden */ _packed?: [T] };
