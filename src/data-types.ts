@@ -27,6 +27,6 @@ export type Transform<
 > = CFrame & { /* @hidden */ _cf?: [X, Y, Z] };
 
 /** T[] */
-export type List<T, LengthType extends AnySize> = T[] & { /* @hidden */ _list?: [T, LengthType] };
+export type List<T, LengthType extends AnySize = u32> = T[] & { /* @hidden */ _list?: [T, LengthType] };
 
 export type Packed<T> = T & { /* @hidden */ _packed?: [T] };
