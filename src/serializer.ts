@@ -143,7 +143,7 @@ export function getSerializeFunction<T>(
           // 1-6: special case index, 7-8: unused
           const specialCase = COMMON_VECTORS.indexOf(vector);
           const isOptimized = specialCase !== -1;
-          const packed = isOptimized ? specialCase : 0x20;
+          const packed = isOptimized ? specialCase : 0x10;
           bits.push(isOptimized);
 
           if (isOptimized) {

@@ -78,8 +78,8 @@ export function getDeserializeFunction<T>(
             const packed = buffer.readu8(buf, currentOffset);
             offset += 1;
 
-            const index = packed;
-            if (index !== 0x20)
+            const index = packed & 0x10
+            if (index !== 0x10)
               return COMMON_VECTORS[index];
           }
         }
