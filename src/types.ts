@@ -9,7 +9,6 @@ export type PrimitiveDataType =
   | IntType
   | "f16" | "f24" | "f32" | "f64"
   | "bool"
-  | "enum";
 
 export type Primitive<T extends PrimitiveDataType = PrimitiveDataType> = [T];
 export type SerializerSchema =

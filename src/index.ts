@@ -19,7 +19,7 @@ class Serializer<T> {
 export * from "./data-types";
 
 /** @metadata macro */
-export function createSerializer<T>(meta?: Modding.Many<SerializerMetadata<T>>): Serializer<T> {
+export default function createSerializer<T>(meta?: Modding.Many<SerializerMetadata<T>>): Serializer<T> {
   const processed = processInfo(meta as never);
   return new Serializer(processed);
 }

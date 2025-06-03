@@ -106,7 +106,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
     case "bool":
       addPackedBit(info);
       break;
-    // case "set":
+    case "set":
     case "list": {
       info.flags |= IterationFlags.SizeUnknown;
 
@@ -128,7 +128,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       break;
     }
     case "enum": {
-      const index = schema[1]!;
+      const [_, index] = schema;
       if (info.sortedEnums[index] === undefined)
         info.sortedEnums[index] = getSortedEnumItems(Enum[index as never]);
 
