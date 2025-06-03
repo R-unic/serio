@@ -18,6 +18,7 @@ export class Serializer<T> {
 
 export * from "./data-types";
 export { SerializerMetadata } from "./metadata";
+export { SerializedData };
 
 /** @metadata macro */
 export default function createSerializer<T>(meta?: Modding.Many<SerializerMetadata<T>>): Serializer<T> {

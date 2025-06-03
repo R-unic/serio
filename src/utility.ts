@@ -1,4 +1,4 @@
-import type { IntType, Primitive } from "./types";
+import type { FloatType, IntType, Primitive } from "./types";
 
 const { floor, log, huge: INF } = math;
 const NaN = 0 / 0;
@@ -23,7 +23,7 @@ export function getSortedEnumItems(enumObject: Enum) {
   return enumItems;
 }
 
-export function sizeOfIntType([kind]: Primitive<IntType>) {
+export function sizeOfNumberType([kind]: Primitive<IntType | FloatType>) {
   switch (kind) {
     case "u8":
     case "i8":
@@ -31,11 +31,19 @@ export function sizeOfIntType([kind]: Primitive<IntType>) {
 
     case "u16":
     case "i16":
+    case "f16":
       return 2;
+
+    case "f24":
+      return 3;
 
     case "u32":
     case "i32":
+    case "f32":
       return 4;
+
+    case "f64":
+      return 8;
   }
 }
 

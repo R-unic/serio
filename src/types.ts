@@ -5,9 +5,11 @@ export interface SerializedData {
 
 export type Modifiers = "optional" | "packed";
 export type IntType = "i8" | "i16" | "i32" | "u8" | "u16" | "u32";
+export type FloatType = "f16" | "f24" | "f32" | "f64";
+
 export type PrimitiveDataType =
   | IntType
-  | "f16" | "f24" | "f32" | "f64"
+  | FloatType
   | "bool"
 
 export type Primitive<T extends PrimitiveDataType = PrimitiveDataType> = [T];

@@ -1,4 +1,4 @@
-import { sizeOfIntType, readF16, readF24, sign } from "./utility";
+import { sizeOfNumberType, readF16, readF24, sign } from "./utility";
 import type { ProcessedInfo } from "./info-processing";
 import type { IntType, Primitive, SerializedData, SerializerSchema } from "./types";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
@@ -56,7 +56,7 @@ export function getDeserializeFunction<T>(
         return buffer.readu8(buf, currentOffset) === 1;
       case "string": {
         const [_, lengthType] = meta;
-        const lengthSize = sizeOfIntType(lengthType);
+        const lengthSize = sizeOfNumberType(lengthType);
         const length = deserialize(lengthType) as number;
         offset += length;
 

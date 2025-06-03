@@ -1,5 +1,5 @@
 
-import { f32ToF16, f32ToF24, sizeOfIntType, sign, CF__index } from "./utility";
+import { f32ToF16, f32ToF24, sizeOfNumberType, sign, CF__index } from "./utility";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
@@ -100,7 +100,7 @@ export function getSerializeFunction<T>(
         const [_, lengthType] = meta;
         const str = value as string;
         const length = str.size();
-        const lengthSize = sizeOfIntType(lengthType);
+        const lengthSize = sizeOfNumberType(lengthType);
         serialize(length, lengthType);
         allocate(length);
         buffer.writestring(buf, currentOffset + lengthSize, str);
@@ -212,11 +212,11 @@ export function getSerializeFunction<T>(
 
           if (!optimizedPosition) {
             serialize(cframe.X, xType, newOffset);
-            newOffset += sizeOfIntType(xType);
+            newOffset += sizeOfNumberType(xType);
             serialize(cframe.Y, yType, newOffset);
-            newOffset += sizeOfIntType(yType);
+            newOffset += sizeOfNumberType(yType);
             serialize(cframe.Z, zType, newOffset);
-            newOffset += sizeOfIntType(zType);
+            newOffset += sizeOfNumberType(zType);
           }
 
           break;
