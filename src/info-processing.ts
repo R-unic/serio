@@ -113,6 +113,20 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       schema = [kind, schemaPass(schema[1], info), schema[2]];
       break;
     }
+    case "tuple": {
+      const [_, elementTypes, restElementType] = schema;
+      const fixedElements = elementTypes.map(v => schemaPass(v, info));
+
+      let restElement;
+      if (restElementType !== undefined) {
+        info.flags |= IterationFlags.SizeUnknown;
+
+        restElement = schemaPass(restElementType, info);
+      }
+
+      schema = [kind, fixedElements, restElement];
+      break;
+    }
     case "enum": {
       const index = schema[1]!;
       if (info.sortedEnums[index] === undefined)

@@ -1,5 +1,6 @@
 import type { FindDiscriminator, IsDiscriminableUnion, IsLiteralUnion, IsUnion } from "./unions";
 import type { f32, u32 } from "../data-types";
+import { HasRest, RestType, SplitRest } from "./tuples";
 
 type IsNumber<T, K extends string> = `_${K}` extends keyof T ? true : false;
 type HasNominal<T> = T extends T ? (T extends `_nominal_${string}` ? true : never) : never;
@@ -11,6 +12,16 @@ interface DataTypes {
   colorsequence: ColorSequence;
   color: Color3;
 }
+
+type ListMetadata<T extends unknown[]> = [T] extends [{ length: number }]
+  ? [
+    "tuple",
+    SplitRest<T> extends infer A ? { [K in keyof A]: SerializerMetadata<A[K]> } : never,
+    HasRest<T> extends true ? SerializerMetadata<RestType<T>> : undefined,
+  ]
+  : ["_list", T] extends [keyof T, { _list?: [infer V, infer Size] }]
+  ? ["list", SerializerMetadata<V>, SerializerMetadata<Size>]
+  : ["list", SerializerMetadata<T[number]>, SerializerMetadata<u32>]
 
 export type SerializerMetadata<T> =
   IsLiteralUnion<T> extends true
@@ -59,8 +70,8 @@ export type SerializerMetadata<T> =
   ? ["cframe", SerializerMetadata<f32>, SerializerMetadata<f32>, SerializerMetadata<f32>]
   : [T] extends [DataTypes[keyof DataTypes]]
   ? [ExtractKeys<DataTypes, T>]
-  : ["_list", T] extends [keyof T, { _list?: [infer V, infer Size] }]
-  ? ["list", SerializerMetadata<V>, SerializerMetadata<Size>]
+  : [T] extends [unknown[]]
+  ? ListMetadata<T>
   : [T] extends [EnumItem]
   ? ["enum", GetEnumType<T>]
   : IsDiscriminableUnion<T> extends true

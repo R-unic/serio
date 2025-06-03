@@ -153,6 +153,25 @@ export function getDeserializeFunction<T>(
 
         return obj;
       }
+      case "union": {
+        const [_, tagName, tagged, byteSize] = meta;
+
+        let tagIndex;
+        if (byteSize === 1) {
+          offset += 1;
+          tagIndex = buffer.readu8(buf, currentOffset);
+        } else if (byteSize === 2) {
+          offset += 2;
+          tagIndex = buffer.readu16(buf, currentOffset);
+        } else
+          tagIndex = bits[bitIndex++] ? 0 : 1;
+
+        const [tagValue, tagMetadata] = tagged[tagIndex];
+        const object = deserialize(tagMetadata);
+        (object as Record<string, unknown>)[tagName] = tagValue;
+
+        return object;
+      }
       case "literal": {
         const [_, literals, byteSize] = meta;
         if (byteSize === 1) {
@@ -166,25 +185,23 @@ export function getDeserializeFunction<T>(
 
         return literals[0];
       }
-      case "union": {
-        const [_, tagName, tagged, byteSize] = meta;
-        let tagIndex;
-        if (byteSize === 1) {
-          offset += 1;
-          tagIndex = buffer.readu8(buf, currentOffset);
-        } else if (byteSize === 2) {
-          offset += 2;
-          tagIndex = buffer.readu16(buf, currentOffset);
-        } else {
-          bitIndex++;
-          tagIndex = bits[bitIndex - 1] ? 0 : 1;
+      case "tuple": {
+        const [_, elements, restMetadata] = meta;
+        let restLength = 0;
+        if (restMetadata !== undefined) {
+          offset += 4;
+          restLength = buffer.readu32(buf, currentOffset);
         }
 
-        const [tagValue, tagMetadata] = tagged[tagIndex];
-        const object = deserialize(tagMetadata);
-        (object as Record<string, unknown>)[tagName] = tagValue;
+        const tuple = new Array<defined>(elements.size() + restLength);
+        for (const element of elements)
+          tuple.push(deserialize(element) as defined);
 
-        return object;
+        if (restMetadata !== undefined)
+          for (const _ of $range(1, restLength))
+            tuple.push(deserialize(restMetadata) as defined);
+
+        return tuple;
       }
 
       case "optional": {

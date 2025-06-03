@@ -296,6 +296,25 @@ export function getSerializeFunction<T>(
 
         break;
       }
+      case "tuple": {
+        const [_, elements, restMetadata] = meta;
+        const tuple = value as unknown[];
+        const size = tuple.size();
+
+        if (restMetadata !== undefined) {
+          allocate(2);
+          buffer.writeu16(buf, currentOffset, size - elements.size());
+        }
+
+        for (const i of $range(1, size)) {
+          const newMetadata = elements[i - 1] ?? restMetadata;
+          if (newMetadata === undefined) continue;
+
+          serialize(tuple[i - 1], newMetadata);
+        }
+
+        break;
+      }
 
       case "optional": {
         const [_, valueMeta] = meta;

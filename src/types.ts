@@ -18,6 +18,7 @@ export type SerializerSchema =
   | ["cframe", xType: Primitive<IntType>, yType: Primitive<IntType>, zType: Primitive<IntType>]
   | ["object", [fieldName: string, fieldType: SerializerSchema][]]
   | ["list", elementType: SerializerSchema, sizeType: Primitive<IntType>]
+  | ["tuple", elementTypes: SerializerSchema[], restElementType?: SerializerSchema]
   | ["string", sizeType: Primitive<IntType>]
   | ["enum", string]
   | ["union", string, [unknown, SerializerSchema][], number]
