@@ -5,6 +5,10 @@ import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
 
 const { min, max, ceil, log, map, pi: PI } = math;
+const {
+  copy, create: createBuffer, len: bufferLength,
+  writei8, writei16, writei32, writeu8, writeu16, writeu32, writef32, writef64, writestring
+} = buffer;
 const toAxisAngle = CFrame.identity.ToAxisAngle as (cf: CFrame) => ReturnType<CFrame["ToAxisAngle"]>;
 
 export function getSerializeFunction<T>(
@@ -33,57 +37,57 @@ export function getSerializeFunction<T>(
     switch (meta[0]) {
       case "u8": {
         allocate(1);
-        buffer.writeu8(buf, currentOffset, value as never);
+        writeu8(buf, currentOffset, value as never);
         break;
       }
       case "u16": {
         allocate(2);
-        buffer.writeu16(buf, currentOffset, value as never);
+        writeu16(buf, currentOffset, value as never);
         break;
       }
       case "u32": {
         allocate(4);
-        buffer.writeu32(buf, currentOffset, value as never);
+        writeu32(buf, currentOffset, value as never);
         break;
       }
       case "i8": {
         allocate(1);
-        buffer.writei8(buf, currentOffset, value as never);
+        writei8(buf, currentOffset, value as never);
         break;
       }
       case "i16": {
         allocate(2);
-        buffer.writei16(buf, currentOffset, value as never);
+        writei16(buf, currentOffset, value as never);
         break;
       }
       case "i32": {
         allocate(4);
-        buffer.writei32(buf, currentOffset, value as never);
+        writei32(buf, currentOffset, value as never);
         break;
       }
       case "f16": {
-        allocate(2);
         const f16 = f32ToF16(value as never);
-        buffer.writeu8(buf, currentOffset, f16 & 0xFF); // lower byte
-        buffer.writeu8(buf, currentOffset + 1, f16 >> 8); // upper byte
+        allocate(2);
+        writeu8(buf, currentOffset, f16 & 0xFF); // lower byte
+        writeu8(buf, currentOffset + 1, f16 >> 8); // upper byte
         break;
       }
       case "f24": {
-        allocate(3);
         const f24 = f32ToF24(value as never);
-        buffer.writeu8(buf, currentOffset, f24 & 0xFF); // lower byte
-        buffer.writeu8(buf, currentOffset + 1, f24 >> 8); // middle byte
-        buffer.writeu8(buf, currentOffset + 2, f24 >> 16); // upper byte
+        allocate(3);
+        writeu8(buf, currentOffset, f24 & 0xFF); // lower byte
+        writeu8(buf, currentOffset + 1, f24 >> 8); // middle byte
+        writeu8(buf, currentOffset + 2, f24 >> 16); // upper byte
         break;
       }
       case "f32": {
         allocate(4);
-        buffer.writef32(buf, currentOffset, value as never);
+        writef32(buf, currentOffset, value as never);
         break;
       }
       case "f64": {
         allocate(8);
-        buffer.writef64(buf, currentOffset, value as never);
+        writef64(buf, currentOffset, value as never);
         break;
       }
       case "bool": {
@@ -93,7 +97,7 @@ export function getSerializeFunction<T>(
         }
 
         allocate(1);
-        buffer.writeu8(buf, currentOffset, value ? 1 : 0);
+        writeu8(buf, currentOffset, value ? 1 : 0);
         break;
       }
       case "string": {
@@ -103,7 +107,7 @@ export function getSerializeFunction<T>(
         const lengthSize = sizeOfNumberType(lengthType);
         serialize(length, lengthType);
         allocate(length);
-        buffer.writestring(buf, currentOffset + lengthSize, str);
+        writestring(buf, currentOffset + lengthSize, str);
         break;
       }
       case "set": {
@@ -133,14 +137,13 @@ export function getSerializeFunction<T>(
         const enumIndex = sortedEnums[meta[1]!].indexOf(value as never);
 
         allocate(1);
-        buffer.writeu8(buf, currentOffset, enumIndex);
+        writeu8(buf, currentOffset, enumIndex);
         break;
       }
       case "vector": {
         const [_, xType, yType, zType] = meta;
         const vector = value as Vector3;
         if (packing) {
-          // 1-6: special case index, 7-8: unused
           const specialCase = COMMON_VECTORS.indexOf(vector);
           const isOptimized = specialCase !== -1;
           const packed = isOptimized ? specialCase : 0x10;
@@ -148,7 +151,7 @@ export function getSerializeFunction<T>(
 
           if (isOptimized) {
             allocate(1);
-            buffer.writeu8(buf, currentOffset, packed);
+            writeu8(buf, currentOffset, packed);
             break;
           }
         }
@@ -200,7 +203,7 @@ export function getSerializeFunction<T>(
 
           let newOffset = currentOffset;
           if (isOptimized) {
-            buffer.writeu8(buf, newOffset, packed);
+            writeu8(buf, newOffset, packed);
             newOffset += 1;
           }
 
@@ -238,9 +241,9 @@ export function getSerializeFunction<T>(
         const mappedAngle = map(angle, 0, PI, 0, 2 ** 16 - 1);
 
         allocate(6); // minimum
-        buffer.writeu16(buf, currentOffset, mappedX);
-        buffer.writei16(buf, currentOffset + 2, mappedY);
-        buffer.writeu16(buf, currentOffset + 4, mappedAngle);
+        writeu16(buf, currentOffset, mappedX);
+        writei16(buf, currentOffset + 2, mappedY);
+        writeu16(buf, currentOffset + 4, mappedAngle);
 
         serialize(cframe.X, xType);
         serialize(cframe.Y, yType);
@@ -251,9 +254,9 @@ export function getSerializeFunction<T>(
         const [_, elementMeta, sizeMeta] = meta;
         const list = value as unknown[];
 
-        serialize(list.size(), sizeMeta ?? ["u32"]);
+        serialize(list.size(), sizeMeta);
         for (const element of list)
-          serialize(element, elementMeta!);
+          serialize(element, elementMeta);
 
         break;
       }
@@ -283,10 +286,10 @@ export function getSerializeFunction<T>(
 
         if (byteSize === 1) {
           allocate(1);
-          buffer.writeu8(buf, currentOffset, tagIndex);
+          writeu8(buf, currentOffset, tagIndex);
         } else if (byteSize === 2) {
           allocate(2);
-          buffer.writeu16(buf, currentOffset, tagIndex);
+          writeu16(buf, currentOffset, tagIndex);
         } else if (byteSize === -1)
           bits.push(tagIndex === 0);
 
@@ -299,12 +302,12 @@ export function getSerializeFunction<T>(
           const index = literals.indexOf(value as defined);
 
           allocate(1);
-          buffer.writeu8(buf, currentOffset, index);
+          writeu8(buf, currentOffset, index);
         } else if (byteSize === 2) {
           const index = literals.indexOf(value as defined);
 
           allocate(2);
-          buffer.writeu16(buf, currentOffset, index);
+          writeu16(buf, currentOffset, index);
         } else if (byteSize === -1)
           bits.push(value === literals[0]);
 
@@ -317,7 +320,7 @@ export function getSerializeFunction<T>(
 
         if (restMetadata !== undefined) {
           allocate(2);
-          buffer.writeu16(buf, currentOffset, size - elements.size());
+          writeu16(buf, currentOffset, size - elements.size());
         }
 
         for (const i of $range(1, size)) {
@@ -342,7 +345,7 @@ export function getSerializeFunction<T>(
         }
 
         allocate(1);
-        buffer.writeu8(buf, currentOffset, exists ? 1 : 0);
+        writeu8(buf, currentOffset, exists ? 1 : 0);
         if (exists)
           serialize(value, valueMeta);
 
@@ -371,14 +374,14 @@ export function getSerializeFunction<T>(
       let currentByte = 0;
       for (const bit of $range(variable ? 1 : 0, min(7, bitSize - bitOffset))) {
         currentByte += (bits[bitOffset] ? 1 : 0) << bit;
-        bitOffset += 1;
+        bitOffset++;
       }
 
       if (variable && byte !== bytes - 1)
-        currentByte += 1;
+        currentByte++;
 
-      buffer.writeu8(buf, offset, currentByte);
-      offset += 1;
+      writeu8(buf, offset, currentByte);
+      offset++;
     }
   }
 
@@ -399,15 +402,15 @@ export function getSerializeFunction<T>(
     serialize(value, schema);
 
     if (!containsPacking) {
-      const trimmed = buffer.create(offset);
-      buffer.copy(trimmed, 0, buf, 0, offset);
+      const trimmed = createBuffer(offset);
+      copy(trimmed, 0, buf, 0, offset);
 
       return createSerializedData(trimmed, blobs);
     }
 
     const [minimumBytes, variableBytes, totalBytes] = calculatePackedBytes();
-    const trimmed = buffer.create(offset + totalBytes);
-    buffer.copy(trimmed, totalBytes, buf, 0, offset);
+    const trimmed = createBuffer(offset + totalBytes);
+    copy(trimmed, totalBytes, buf, 0, offset);
 
     if (minimumBytes > 0)
       writeBits(trimmed, 0, 0, minimumBytes, false);
@@ -421,7 +424,7 @@ export function getSerializeFunction<T>(
 
 function createSerializedData(trimmed: buffer, blobs: defined[]): SerializedData {
   return {
-    buf: buffer.len(trimmed) === 0 ? undefined : trimmed,
+    buf: bufferLength(trimmed) === 0 ? undefined : trimmed,
     blobs: blobs.isEmpty() ? undefined : blobs
   };
 }

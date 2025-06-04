@@ -96,7 +96,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       break;
     }
     case "object": {
-      const fields = schema[1];
+      const [_, fields] = schema;
       const newFields = fields.map<(typeof fields)[number]>(([name, meta]) => [name, schemaPass(meta, info)]);
       schema = ["object", newFields];
       break;

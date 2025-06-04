@@ -1,9 +1,14 @@
-import { sizeOfNumberType, readF16, readF24, sign } from "./utility";
+import { sizeOfNumberType, readf16, readf24, sign } from "./utility";
 import type { ProcessedInfo } from "./info-processing";
 import type { IntType, Primitive, SerializedData, SerializerSchema } from "./types";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
 
 const { ceil, map, pi: PI } = math;
+const { create: createVector } = vector;
+const {
+  create: createBuffer,
+  readi8, readi16, readi32, readu8, readu16, readu32, readf32, readf64, readstring
+} = buffer;
 const { fromAxisAngle } = CFrame;
 
 export function getDeserializeFunction<T>(
@@ -23,47 +28,50 @@ export function getDeserializeFunction<T>(
     switch (meta[0]) {
       case "u8":
         offset += 1;
-        return buffer.readu8(buf, currentOffset);
+        return readu8(buf, currentOffset);
       case "u16":
         offset += 2;
-        return buffer.readu16(buf, currentOffset);
+        return readu16(buf, currentOffset);
       case "u32":
         offset += 4;
-        return buffer.readu32(buf, currentOffset);
+        return readu32(buf, currentOffset);
       case "i8":
         offset += 1;
-        return buffer.readi8(buf, currentOffset);
+        return readi8(buf, currentOffset);
       case "i16":
         offset += 2;
-        return buffer.readi16(buf, currentOffset);
+        return readi16(buf, currentOffset);
       case "i32":
         offset += 4;
-        return buffer.readi32(buf, currentOffset);
+        return readi32(buf, currentOffset);
       case "f16":
         offset += 2;
-        return readF16(buf, currentOffset);
+        return readf16(buf, currentOffset);
       case "f24":
         offset += 3;
-        return readF24(buf, currentOffset);
+        return readf24(buf, currentOffset);
       case "f32":
         offset += 4;
-        return buffer.readf32(buf, currentOffset);
+        return readf32(buf, currentOffset);
+      case "f64":
+        offset += 8;
+        return readf64(buf, currentOffset);
       case "bool":
         if (packing)
           return bits[bitIndex++];
 
         offset += 1;
-        return buffer.readu8(buf, currentOffset) === 1;
+        return readu8(buf, currentOffset) === 1;
       case "string": {
         const [_, lengthType] = meta;
         const lengthSize = sizeOfNumberType(lengthType);
         const length = deserialize(lengthType) as number;
         offset += length;
 
-        return buffer.readstring(buf, currentOffset + lengthSize, length);
+        return readstring(buf, currentOffset + lengthSize, length);
       }
       case "enum": {
-        const index = buffer.readu8(buf, currentOffset);
+        const index = readu8(buf, currentOffset);
         offset += 1;
 
         return sortedEnums[meta[1]!][index];
@@ -75,7 +83,7 @@ export function getDeserializeFunction<T>(
           const isOptimized = bits[i];
 
           if (isOptimized) {
-            const packed = buffer.readu8(buf, currentOffset);
+            const packed = readu8(buf, currentOffset);
             offset += 1;
 
             const index = packed & 0x10
@@ -87,14 +95,14 @@ export function getDeserializeFunction<T>(
         const x = deserialize(xType) as number;
         const y = deserialize(yType) as number;
         const z = deserialize(zType) as number;
-        return vector.create(x, y, z);
+        return createVector(x, y, z);
       }
       case "cframe": {
         const [_, xType, yType, zType] = meta;
         if (packing) {
           const isOptimized = bits[bitIndex++];
           if (isOptimized) {
-            const packed = buffer.readu8(buf, currentOffset);
+            const packed = readu8(buf, currentOffset);
             offset += 1;
 
             const optimizedPosition = packed & 0x60;
@@ -104,9 +112,9 @@ export function getDeserializeFunction<T>(
             if (optimizedRotation !== 0x1F)
               rotation = AXIS_ALIGNED_ORIENTATIONS[optimizedRotation];
             else {
-              const mappedX = buffer.readu16(buf, currentOffset + 1);
-              let mappedY = buffer.readi16(buf, currentOffset + 3);
-              const mappedAngle = buffer.readu16(buf, currentOffset + 5);
+              const mappedX = readu16(buf, currentOffset + 1);
+              let mappedY = readi16(buf, currentOffset + 3);
+              const mappedAngle = readu16(buf, currentOffset + 5);
               offset += 6;
 
               const zSign = sign(mappedY);
@@ -120,7 +128,7 @@ export function getDeserializeFunction<T>(
               derivedMaximumSquared -= axisY ** 2;
 
               const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
-              const axis = vector.create(axisX, axisY, axisZ) as unknown as Vector3;
+              const axis = createVector(axisX, axisY, axisZ) as unknown as Vector3;
               const angle = map(mappedAngle, 0, max16Bits, 0, PI);
 
               rotation = fromAxisAngle(axis, angle);
@@ -142,16 +150,15 @@ export function getDeserializeFunction<T>(
       }
       case "list": {
         const [_, elementMeta, sizeMeta] = meta;
-        const size = deserialize(sizeMeta ?? ["u32"]) as number;
+        const size = deserialize(sizeMeta) as number;
         const list: defined[] = [];
         for (const _ of $range(1, size))
-          list.push(deserialize(elementMeta!)!);
+          list.push(deserialize(elementMeta)!);
 
         return list
       }
       case "object": {
-        const fields = meta[1]!;
-
+        const [_, fields] = meta;
         const obj: Record<string, unknown> = {};
         for (const [name, fieldMeta] of fields)
           obj[name] = deserialize(fieldMeta);
@@ -164,10 +171,10 @@ export function getDeserializeFunction<T>(
         let tagIndex;
         if (byteSize === 1) {
           offset += 1;
-          tagIndex = buffer.readu8(buf, currentOffset);
+          tagIndex = readu8(buf, currentOffset);
         } else if (byteSize === 2) {
           offset += 2;
-          tagIndex = buffer.readu16(buf, currentOffset);
+          tagIndex = readu16(buf, currentOffset);
         } else
           tagIndex = bits[bitIndex++] ? 0 : 1;
 
@@ -181,10 +188,10 @@ export function getDeserializeFunction<T>(
         const [_, literals, byteSize] = meta;
         if (byteSize === 1) {
           offset += 1;
-          return literals[buffer.readu8(buf, currentOffset)];
+          return literals[readu8(buf, currentOffset)];
         } else if (byteSize === 2) {
           offset += 2;
-          return literals[buffer.readu16(buf, currentOffset)];
+          return literals[readu16(buf, currentOffset)];
         } else if (byteSize === -1)
           return literals[bits[bitIndex++] ? 0 : 1];
 
@@ -195,7 +202,7 @@ export function getDeserializeFunction<T>(
         let restLength = 0;
         if (restMetadata !== undefined) {
           offset += 4;
-          restLength = buffer.readu32(buf, currentOffset);
+          restLength = readu32(buf, currentOffset);
         }
 
         const tuple = new Array<defined>(elements.size() + restLength);
@@ -235,7 +242,7 @@ export function getDeserializeFunction<T>(
         const [_, valueMeta] = meta;
         const exists = packing
           ? bits[bitIndex++]
-          : buffer.readu8(buf, offset++) === 1;
+          : readu8(buf, offset++) === 1;
 
         return exists ? deserialize(valueMeta) : undefined;
       }
@@ -257,9 +264,9 @@ export function getDeserializeFunction<T>(
 
   function deserializeCFrame(xType: Primitive<IntType>, yType: Primitive<IntType>, zType: Primitive<IntType>) {
     const currentOffset = offset;
-    const mappedX = buffer.readu16(buf, currentOffset);
-    let mappedY = buffer.readi16(buf, currentOffset + 2);
-    const mappedAngle = buffer.readu16(buf, currentOffset + 4);
+    const mappedX = readu16(buf, currentOffset);
+    let mappedY = readi16(buf, currentOffset + 2);
+    const mappedAngle = readu16(buf, currentOffset + 4);
     offset += 6;
 
     const zSign = sign(mappedY);
@@ -273,14 +280,14 @@ export function getDeserializeFunction<T>(
     derivedMaximumSquared -= axisY ** 2;
 
     const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
-    const axis = vector.create(axisX, axisY, axisZ) as unknown as Vector3;
+    const axis = createVector(axisX, axisY, axisZ) as unknown as Vector3;
     const angle = map(mappedAngle, 0, max16Bits, 0, PI);
     const axisAngle = fromAxisAngle(axis, angle);
 
     const x = deserialize(xType) as number;
     const y = deserialize(yType) as number;
     const z = deserialize(zType) as number;
-    const position = vector.create(x, y, z) as unknown as Vector3;
+    const position = createVector(x, y, z) as unknown as Vector3;
 
     return axisAngle.add(position);
   }
@@ -289,7 +296,7 @@ export function getDeserializeFunction<T>(
     const guaranteedBytes = minimumPackedBytes;
 
     while (true) {
-      const currentByte = buffer.readu8(buf, offset);
+      const currentByte = readu8(buf, offset);
       const guaranteedByte = offset < guaranteedBytes;
 
       for (const bit of $range(guaranteedByte ? 0 : 1, 7)) {
@@ -311,7 +318,7 @@ export function getDeserializeFunction<T>(
 
   return (data: SerializedData) => {
     ({
-      buf = buffer.create(0),
+      buf = createBuffer(0),
       blobs =[]
     } = data);
     offset = 0;

@@ -1,13 +1,16 @@
 import type { FloatType, IntType, Primitive } from "./types";
 
 const { floor, log, huge: INF } = math;
+const { readu8 } = buffer;
+const { info } = debug;
+const { sort } = table;
 const NaN = 0 / 0;
 
 type CF__index = <K extends keyof CFrame>(cf: CFrame, index: K) => CFrame[K];
 export const CF__index = select(2, xpcall(
   // retarded never cast to avoid roblox-ts error 'Cannot index a method without calling it!'
   () => CFrame.identity[undefined! as keyof CFrame] as never,
-  () => debug.info(2, "f")[0]
+  () => info(2, "f")[0]
 ))[0] as CF__index;
 
 /**
@@ -16,14 +19,14 @@ export const CF__index = select(2, xpcall(
  * We can't send Enum values over the network as the values aren't always within the 8 bit limit,
  * so instead we send the EnumItem's position in the array returned here.
  */
-export function getSortedEnumItems(enumObject: Enum) {
+export function getSortedEnumItems(enumObject: Enum): EnumItem[] {
   const enumItems = enumObject.GetEnumItems();
-  enumItems.sort((a, b) => a.Value < b.Value);
+  sort(enumItems, (a, b) => a.Value < b.Value);
 
   return enumItems;
 }
 
-export function sizeOfNumberType([kind]: Primitive<IntType | FloatType>) {
+export function sizeOfNumberType([kind]: Primitive<IntType | FloatType>): number {
   switch (kind) {
     case "u8":
     case "i8":
@@ -51,11 +54,10 @@ export function sign(n: number): -1 | 1 {
   return n < 0 ? -1 : 1;
 }
 
-export function readF16(buf: buffer, offset = 0): number {
-  const low = buffer.readu8(buf, offset);
-  const high = buffer.readu8(buf, offset + 1);
-  const f16 = (high << 8) | low;
-  return f16ToF32(f16);
+export function readf16(buf: buffer, offset = 0): number {
+  const low = readu8(buf, offset);
+  const high = readu8(buf, offset + 1);
+  return f16ToF32((high << 8) | low);
 }
 
 export function f16ToF32(n: number): number {
@@ -100,37 +102,36 @@ export function f32ToF16(n: number): number {
   return (sign << 15) + (exponentBits << 10) + mantissa;
 }
 
-export function readF24(buf: buffer, offset = 0): number {
-  const b0 = buffer.readu8(buf, offset);
-  const b1 = buffer.readu8(buf, offset + 1);
-  const b2 = buffer.readu8(buf, offset + 2);
-  const f24 = (b2 << 16) | (b1 << 8) | b0;
-  return f24ToF32(f24);
+export function readf24(buf: buffer, offset = 0): number {
+  const b0 = readu8(buf, offset);
+  const b1 = readu8(buf, offset + 1);
+  const b2 = readu8(buf, offset + 2);
+  return f24ToF32((b2 << 16) | (b1 << 8) | b0);
 }
 
 export function f24ToF32(n: number): number {
-  const sign = n >>> 23;
+  const sign = n >>> 23 === 1;
   const signMult = sign ? -1 : 1;
   const exponent = (n >>> 16) & 0x7F; // 7 bits
   const mantissa = n & 0xFFFF;        // 16 bits
 
-  if (exponent === 0) {
+  if (exponent === 0)
     return mantissa === 0
-      ? signMult * 0
-      : signMult * mantissa * 2 ** -78;
-  } else if (exponent === 0x7F) {
-    return mantissa !== 0 ? NaN : (sign ? -INF : INF);
-  }
+      ? 0 * signMult
+      : 2 ** -78 * signMult * mantissa;
+  else if (exponent === 0x7F)
+    return mantissa !== 0
+      ? NaN
+      : (sign ? -INF : INF);
 
   return signMult * (1 + mantissa / 65536) * 2 ** (exponent - 63);
 }
 
 export function f32ToF24(n: number): number {
-  let sign = 0;
-  if (n < 0) {
-    sign = 1;
+  const negative = n < 0;
+  let sign = negative ? 1 : 0;
+  if (negative)
     n = -n;
-  }
 
   if (n === INF)
     return (sign << 23) | (0x7F << 16);
@@ -145,6 +146,5 @@ export function f32ToF24(n: number): number {
   const exponent = floor(log(n) / LOG2);
   const mantissa = floor((n / 2 ** exponent - 1) * 65536 + 0.5);
   const exponentBits = exponent + 63;
-
   return (sign << 23) | (exponentBits << 16) | mantissa;
 }
