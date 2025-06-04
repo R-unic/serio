@@ -1,6 +1,6 @@
 import type { FindDiscriminator, IsDiscriminableUnion, IsLiteralUnion, IsUnion } from "./unions";
+import type { HasRest, RestType, SplitRest } from "./tuples";
 import type { f32, u32 } from "../data-types";
-import { HasRest, RestType, SplitRest } from "./tuples";
 
 type IsNumber<T, K extends string> = `_${K}` extends keyof T ? true : false;
 type HasNominal<T> = T extends T ? (T extends `_nominal_${string}` ? true : never) : never;
@@ -8,20 +8,34 @@ type GetEnumType<T> = [T] extends [EnumItem] ? ExtractKeys<Enums, T["EnumType"]>
 
 /** A shortcut for defining Roblox datatypes (which map directly to a simple type) */
 interface DataTypes {
-  numbersequence: NumberSequence;
-  colorsequence: ColorSequence;
-  color: Color3;
+  readonly numbersequence: NumberSequence;
+  readonly colorsequence: ColorSequence;
+  readonly color: Color3;
 }
 
-type ListMetadata<T extends unknown[]> = [T] extends [{ length: number }]
+type TupleMetadata<T extends unknown[]> =
+  ["_tuple", T] extends [keyof T, { _tuple?: [infer V extends unknown[], infer RestLengthType]; }]
   ? [
+    "tuple",
+    SplitRest<V> extends infer A ? { [K in keyof A]: SerializerMetadata<A[K]> } : never,
+    HasRest<V> extends true ? SerializerMetadata<RestType<V>> : undefined,
+    HasRest<V> extends true ? SerializerMetadata<RestLengthType> : undefined
+  ]
+  : [
     "tuple",
     SplitRest<T> extends infer A ? { [K in keyof A]: SerializerMetadata<A[K]> } : never,
     HasRest<T> extends true ? SerializerMetadata<RestType<T>> : undefined,
-  ]
-  : ["_list", T] extends [keyof T, { _list?: [infer V, infer Size] }]
+    HasRest<T> extends true ? SerializerMetadata<u32> : undefined
+  ];
+
+type ListMetadata<T extends unknown[]> =
+  ["_list", T] extends [keyof T, { _list?: [infer V, infer Size]; }]
   ? ["list", SerializerMetadata<V>, SerializerMetadata<Size>]
-  : ["list", SerializerMetadata<T[number]>, SerializerMetadata<u32>]
+  : ["list", SerializerMetadata<T[number]>, SerializerMetadata<u32>];
+
+type ArrayMetadata<T extends unknown[]> = [T] extends [{ length: number }]
+  ? TupleMetadata<T>
+  : ListMetadata<T>;
 
 export type SerializerMetadata<T> =
   IsLiteralUnion<T> extends true
@@ -79,7 +93,7 @@ export type SerializerMetadata<T> =
   : [T] extends [DataTypes[keyof DataTypes]]
   ? [ExtractKeys<DataTypes, T>]
   : [T] extends [unknown[]]
-  ? ListMetadata<T>
+  ? ArrayMetadata<T>
   : [T] extends [EnumItem]
   ? ["enum", GetEnumType<T>]
   : IsDiscriminableUnion<T> extends true

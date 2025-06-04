@@ -1,4 +1,5 @@
-type AnySize = u8 | u16 | u32;
+import type { AnySize } from "./types";
+
 export type u8 = number & { /* @hidden */ _u8?: never };
 export type u16 = number & { /* @hidden */ _u16?: never };
 export type u32 = number & { /* @hidden */ _u32?: never };
@@ -27,10 +28,20 @@ export type Transform<
 > = CFrame & { /* @hidden */ _cf?: [X, Y, Z] };
 
 /** T[] */
-export type List<T, LengthType extends AnySize = u32> = T[] & { /* @hidden */ _list?: [T, LengthType] };
-/** Set<T> */
-export type HashSet<T, LengthType extends AnySize = u32> = Set<T> & { /* @hidden */ _set?: [T, LengthType] };
-/** Map<K, V> */
-export type HashMap<K, V, LengthType extends AnySize = u32> = Map<K, V> & { /* @hidden */ _map?: [K, V, LengthType] };
+export type List<T, LengthType extends AnySize = u32> =
+  T[] & { /* @hidden */ _list?: [T, LengthType] };
 
+/** [T] */
+export type Tuple<T extends unknown[], LengthType extends AnySize = u32> =
+  T & { /* @hidden */ _tuple?: [T, LengthType] };
+
+/** Set<T> */
+export type HashSet<T, LengthType extends AnySize = u32> =
+  Set<T> & { /* @hidden */ _set?: [T, LengthType] };
+
+/** Map<K, V> */
+export type HashMap<K, V, LengthType extends AnySize = u32> =
+  Map<K, V> & { /* @hidden */ _map?: [K, V, LengthType] };
+
+/** Bitpacks all descendant fields */
 export type Packed<T> = T & { /* @hidden */ _packed?: [T] };

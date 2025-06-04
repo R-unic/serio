@@ -1,3 +1,5 @@
+import type { u8, u16, u32 } from "./data-types";
+
 export interface SerializedData {
   readonly buf?: buffer;
   readonly blobs?: defined[];
@@ -12,6 +14,7 @@ export type PrimitiveDataType =
   | FloatType
   | "bool"
 
+export type AnySize = u8 | u16 | u32;
 export type Primitive<T extends PrimitiveDataType = PrimitiveDataType> = [T];
 export type SerializerSchema =
   | Primitive
@@ -19,7 +22,7 @@ export type SerializerSchema =
   | ["cframe", xType: Primitive<IntType>, yType: Primitive<IntType>, zType: Primitive<IntType>]
   | ["object", [fieldName: string, fieldType: SerializerSchema][]]
   | ["list", elementType: SerializerSchema, lengthType: Primitive<IntType>]
-  | ["tuple", elementTypes: SerializerSchema[], restElementType?: SerializerSchema]
+  | ["tuple", elementTypes: SerializerSchema[], restElementType?: SerializerSchema, restLengthType?: Primitive<IntType>]
   | ["string", sizeType: Primitive<IntType>]
   | ["set", elementType: SerializerSchema, lengthType: Primitive<IntType>]
   | ["map", keyType: SerializerSchema, valueType: SerializerSchema, lengthType: Primitive<IntType>]

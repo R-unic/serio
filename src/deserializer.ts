@@ -198,12 +198,10 @@ export function getDeserializeFunction<T>(
         return literals[0];
       }
       case "tuple": {
-        const [_, elements, restMetadata] = meta;
+        const [_, elements, restMetadata, restLengthType] = meta;
         let restLength = 0;
-        if (restMetadata !== undefined) {
-          offset += 4;
-          restLength = readu32(buf, currentOffset);
-        }
+        if (restMetadata !== undefined)
+          restLength = deserialize(restLengthType!) as number;
 
         const tuple = new Array<defined>(elements.size() + restLength);
         for (const element of elements)

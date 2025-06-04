@@ -16,7 +16,7 @@ export function getSerializeFunction<T>(
 ): (value: T) => SerializedData {
   let bits = table.create<boolean>(minimumPackedBits);
   let currentSize = 2 ** 8;
-  let buf = buffer.create(currentSize);
+  let buf = createBuffer(currentSize);
   let offset!: number;
   let blobs!: defined[];
   let packing = false;
