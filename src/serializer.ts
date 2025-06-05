@@ -170,6 +170,14 @@ export function getSerializeFunction<T>(
         writeu8(buf, currentOffset, enumIndex);
         break;
       }
+      case "color": {
+        const color = value as Color3;
+        allocate(3);
+        writeu8(buf, currentOffset, color.R * 0xFF);
+        writeu8(buf, currentOffset + 1, color.G * 0xFF);
+        writeu8(buf, currentOffset + 2, color.B * 0xFF);
+        break;
+      }
       case "udim": {
         const [_, xType, yType] = meta;
         const udim = value as UDim;

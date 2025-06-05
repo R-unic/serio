@@ -14,6 +14,9 @@ export type PrimitiveDataType =
   | IntType
   | FloatType
   | "bool"
+  | "color"
+  | "colorsequence"
+  | "numbersequence"
 
 export type AnySize = u8 | u16 | u24 | u32;
 export type Primitive<T extends PrimitiveDataType = PrimitiveDataType> = [T];

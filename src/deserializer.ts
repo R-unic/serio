@@ -14,6 +14,7 @@ const {
   readi8, readi16, readi32, readu8, readu16, readu32, readf32, readf64, readstring
 } = buffer;
 const { fromAxisAngle } = CFrame;
+const { fromRGB } = Color3;
 
 export function getDeserializeFunction<T>(
   { schema, containsPacking, containsUnknownPacking, minimumPackedBits, minimumPackedBytes, sortedEnums }: ProcessedInfo
@@ -85,6 +86,14 @@ export function getDeserializeFunction<T>(
         offset += 1;
 
         return sortedEnums[meta[1]!][index];
+      }
+      case "color": {
+        const r = readu8(buf, currentOffset) as number;
+        const g = readu8(buf, currentOffset + 1) as number;
+        const b = readu8(buf, currentOffset + 2) as number;
+        offset += 3;
+
+        return fromRGB(r, g, b);
       }
       case "udim": {
         const [_, scaleType, offsetType] = meta;
