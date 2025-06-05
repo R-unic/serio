@@ -270,6 +270,9 @@ export function getDeserializeFunction<T>(
 
       case "blob":
         return blobs![blobIndex++];
+
+      default:
+        throw `[@rbxts/serio]: Cannot deserialize unknown schema type '${meta[0]}'`;
     }
   }
 

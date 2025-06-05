@@ -385,6 +385,9 @@ export function getSerializeFunction<T>(
         blobs.push(value!);
         break;
       }
+
+      default:
+        throw `[@rbxts/serio]: Cannot serialize unknown schema type '${meta[0]}'`;
     }
   }
 
