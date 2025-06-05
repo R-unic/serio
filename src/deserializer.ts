@@ -22,6 +22,15 @@ export function getDeserializeFunction<T>(
   let blobIndex = 0;
   let packing = false;
 
+  function togglePacking<T = void>(on: boolean, f: () => T): T {
+    const enclosing = packing;
+    packing = on;
+    const value = f();
+    packing = enclosing;
+
+    return value;
+  }
+
   function deserialize(meta: SerializerSchema): unknown {
     const currentOffset = offset;
 
@@ -86,8 +95,8 @@ export function getDeserializeFunction<T>(
             const packed = readu8(buf, currentOffset);
             offset += 1;
 
-            const index = packed & 0x10
-            if (index !== 0x10)
+            const index = packed & 0x7F
+            if (index !== 0x7F)
               return COMMON_VECTORS[index];
           }
         }
@@ -246,13 +255,7 @@ export function getDeserializeFunction<T>(
       }
       case "packed": {
         const [_, innerType] = meta;
-        const enclosingPacking = packing;
-        packing = true;
-
-        const value = deserialize(innerType);
-        packing = enclosingPacking;
-
-        return value;
+        return togglePacking(true, () => deserialize(innerType));
       }
 
       case "blob":
@@ -281,11 +284,7 @@ export function getDeserializeFunction<T>(
     const axis = createVector(axisX, axisY, axisZ) as unknown as Vector3;
     const angle = map(mappedAngle, 0, max16Bits, 0, PI);
     const axisAngle = fromAxisAngle(axis, angle);
-
-    const x = deserialize(xType) as number;
-    const y = deserialize(yType) as number;
-    const z = deserialize(zType) as number;
-    const position = createVector(x, y, z) as unknown as Vector3;
+    const position = deserialize(["vector", xType, yType, zType]) as Vector3;
 
     return axisAngle.add(position);
   }
@@ -295,14 +294,12 @@ export function getDeserializeFunction<T>(
 
     while (true) {
       const currentByte = readu8(buf, offset);
-      const guaranteedByte = offset < guaranteedBytes;
+      const guaranteedByte = offset++ < guaranteedBytes;
 
       for (const bit of $range(guaranteedByte ? 0 : 1, 7)) {
         const value = (currentByte >>> bit) % 2 === 1;
         bits.push(value);
       }
-
-      offset += 1;
 
       // Variable bit indicated the end.
       if (!guaranteedByte && currentByte % 2 === 0)

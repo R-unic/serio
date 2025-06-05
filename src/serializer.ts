@@ -21,6 +21,15 @@ export function getSerializeFunction<T>(
   let blobs!: defined[];
   let packing = false;
 
+  function togglePacking<T = void>(on: boolean, f: () => T): T {
+    const enclosing = packing;
+    packing = on;
+    const value = f();
+    packing = enclosing;
+
+    return value;
+  }
+
   function allocate(size: number): void {
     if ((offset += size) <= currentSize) return;
 
@@ -146,7 +155,7 @@ export function getSerializeFunction<T>(
         if (packing) {
           const specialCase = COMMON_VECTORS.findIndex(v => fuzzyEq(v, vector3));
           const isOptimized = specialCase !== -1;
-          const packed = isOptimized ? specialCase : 0x10;
+          const packed = isOptimized ? specialCase : 0x7F;
           bits.push(isOptimized);
 
           if (isOptimized) {
@@ -223,9 +232,7 @@ export function getSerializeFunction<T>(
           }
 
           if (!optimizedPosition) {
-            serialize(cframe.X, xType, newOffset);
-            serialize(cframe.Y, yType, newOffset + xSize);
-            serialize(cframe.Z, zType, newOffset + xSize + ySize);
+            serialize(position, ["vector", xType, yType, zType], newOffset);
             offset -= positionBytes;
           }
 
@@ -353,11 +360,7 @@ export function getSerializeFunction<T>(
       }
       case "packed": {
         const [_, innerType] = meta;
-        const enclosingPacking = packing;
-        packing = true;
-
-        serialize(value, innerType);
-        packing = enclosingPacking;
+        togglePacking(true, () => serialize(value, innerType));
         break;
       }
 

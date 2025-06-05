@@ -60,14 +60,6 @@ export const COMMON_VECTORS = [
   vector.create(-1, 0, 1),
   vector.create(1, 0, -1),
 
-  // Diagonals (3 axes, mixed signs)
-  vector.create(1, 1, -1),
-  vector.create(1, -1, 1),
-  vector.create(-1, 1, 1),
-  vector.create(-1, -1, 1),
-  vector.create(-1, 1, -1),
-  vector.create(1, -1, -1),
-
   // Half vectors
   vector.create(0.5, 0, 0),
   vector.create(0, 0.5, 0),
@@ -114,28 +106,10 @@ export const COMMON_VECTORS = [
   vector.create(2, -2, 1),
 
   // Octant diagonals (unit)
-  vector.create(1, 1, 1),
   vector.create(-1, 1, 1),
   vector.create(1, -1, 1),
   vector.create(1, 1, -1),
   vector.create(-1, -1, 1),
   vector.create(1, -1, -1),
-  vector.create(-1, 1, -1),
-
-  // Misc gradient-related or common geometry
-  vector.create(0.6, 0.8, 0),
-  vector.create(0, 0.6, 0.8),
-  vector.create(0.8, 0, 0.6),
-  vector.create(-0.6, -0.8, 0),
-  vector.create(0.33, 0.33, 0.33),
-  vector.create(0.577, 0.577, -0.577),
-  vector.create(-0.577, 0.577, 0.577),
-
-  // Misc with symmetry
-  vector.create(-1, 0.5, 0),
-  vector.create(0, 1, -0.5),
-  vector.create(0.5, 0, -1),
-  vector.create(-0.5, 1, 0),
-  vector.create(1, 0, 0.5),
-  vector.create(0, -1, 0.5),
+  vector.create(-1, 1, -1)
 ] as unknown as Vector3[];
