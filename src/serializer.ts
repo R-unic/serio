@@ -170,6 +170,22 @@ export function getSerializeFunction<T>(
         writeu8(buf, currentOffset, enumIndex);
         break;
       }
+      case "numbersequence": {
+        const keypoints = (value as NumberSequence).Keypoints;
+        const keypointCount = keypoints.size();
+        allocate(1 + keypointCount * 6);
+        writeu8(buf, currentOffset, keypointCount);
+
+        for (const i of $range(1, keypointCount)) {
+          const keypointOffset = currentOffset + 1 + 6 * (i - 1);
+          const keypoint = keypoints[i - 1];
+          writeu16(buf, keypointOffset, keypoint.Time * 0xFFFF);
+          writeu16(buf, keypointOffset + 2, keypoint.Value * 0xFFFF);
+          writeu16(buf, keypointOffset + 4, keypoint.Envelope * 0xFFFF);
+        }
+
+        break;
+      }
       case "color": {
         const color = value as Color3;
         allocate(3);

@@ -87,6 +87,24 @@ export function getDeserializeFunction<T>(
 
         return sortedEnums[meta[1]!][index];
       }
+      case "numbersequence": {
+        const keypointCount = readu8(buf, currentOffset);
+        const keypoints: NumberSequenceKeypoint[] = [];
+        let bytesRead = 1;
+
+        for (const i of $range(1, keypointCount)) {
+          const keypointOffset = currentOffset + 1 + 6 * (i - 1);
+          const time = readu16(buf, keypointOffset) / 0xFFFF;
+          const value = readu16(buf, keypointOffset + 2) / 0xFFFF;
+          const envelope = readu16(buf, keypointOffset + 4) / 0xFFFF;
+
+          bytesRead += 6;
+          keypoints.push(new NumberSequenceKeypoint(time, value, envelope));
+        }
+
+        offset += bytesRead;
+        return new NumberSequence(keypoints);
+      }
       case "color": {
         const r = readu8(buf, currentOffset) as number;
         const g = readu8(buf, currentOffset + 1) as number;
