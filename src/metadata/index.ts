@@ -58,12 +58,16 @@ export type SerializerMetadata<T> =
   ? ["u8"]
   : IsNumber<T, "u16"> extends true
   ? ["u16"]
+  : IsNumber<T, "u24"> extends true
+  ? ["u24"]
   : IsNumber<T, "u32"> extends true
   ? ["u32"]
   : IsNumber<T, "i8"> extends true
   ? ["i8"]
   : IsNumber<T, "i16"> extends true
   ? ["i16"]
+  : IsNumber<T, "i24"> extends true
+  ? ["i24"]
   : IsNumber<T, "i32"> extends true
   ? ["i32"]
   : [T] extends [boolean]

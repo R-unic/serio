@@ -1,13 +1,11 @@
 import { LOG2, NaN } from "../constants";
 
-const { readu8 } = buffer;
+const { readu16 } = buffer;
 const { floor, log, huge: INF } = math;
 
 export namespace f16 {
   export function read(buf: buffer, offset = 0): number {
-    const low = readu8(buf, offset);
-    const high = readu8(buf, offset + 1);
-    return toF32((high << 8) | low);
+    return toF32(readu16(buf, offset));
   }
 
   export function toF32(n: number): number {

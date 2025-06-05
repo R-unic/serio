@@ -34,6 +34,8 @@ export function sizeOfNumberType([kind]: Primitive<IntType | FloatType>): number
     case "f16":
       return 2;
 
+    case "u24":
+    case "i24":
     case "f24":
       return 3;
 

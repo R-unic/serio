@@ -2,6 +2,8 @@
 import { sizeOfNumberType, sign, CF__index } from "./utility";
 import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
+import { u24 } from "./utility/u24";
+import { i24 } from "./utility/i24";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
@@ -56,6 +58,14 @@ export function getSerializeFunction<T>(
         writeu16(buf, currentOffset, value as never);
         break;
       }
+      case "u24": {
+        const bytes = u24.fromU32(value as never);
+        allocate(3);
+        writeu8(buf, currentOffset, bytes & 0xFF); // lower byte
+        writeu8(buf, currentOffset + 1, (bytes >> 8) & 0xFF); // middle byte
+        writeu8(buf, currentOffset + 2, (bytes >> 16) & 0xFF); // upper byte
+        break;
+      }
       case "u32": {
         allocate(4);
         writeu32(buf, currentOffset, value as never);
@@ -71,6 +81,14 @@ export function getSerializeFunction<T>(
         writei16(buf, currentOffset, value as never);
         break;
       }
+      case "i24": {
+        const bytes = i24.fromI32(value as never);
+        allocate(3);
+        writei8(buf, currentOffset, bytes & 0xFF); // lower byte
+        writei8(buf, currentOffset + 1, (bytes >> 8) & 0xFF); // middle byte
+        writei8(buf, currentOffset + 2, (bytes >> 16) & 0xFF); // upper byte
+        break;
+      }
       case "i32": {
         allocate(4);
         writei32(buf, currentOffset, value as never);
@@ -80,15 +98,15 @@ export function getSerializeFunction<T>(
         const bytes = f16.fromF32(value as never);
         allocate(2);
         writeu8(buf, currentOffset, bytes & 0xFF); // lower byte
-        writeu8(buf, currentOffset + 1, bytes >> 8); // upper byte
+        writeu8(buf, currentOffset + 1, (bytes >> 8) & 0xFF); // upper byte
         break;
       }
       case "f24": {
         const bytes = f24.fromF32(value as never);
         allocate(3);
         writeu8(buf, currentOffset, bytes & 0xFF); // lower byte
-        writeu8(buf, currentOffset + 1, bytes >> 8); // middle byte
-        writeu8(buf, currentOffset + 2, bytes >> 16); // upper byte
+        writeu8(buf, currentOffset + 1, (bytes >> 8) & 0xFF); // middle byte
+        writeu8(buf, currentOffset + 2, (bytes >> 16) & 0xFF); // upper byte
         break;
       }
       case "f32": {
@@ -267,7 +285,7 @@ export function getSerializeFunction<T>(
         break;
       }
       case "object": {
-        const fields = meta[1]!;
+        const [_, fields] = meta;
         const object = value as Record<string, unknown>;
 
         for (const [name, schema] of fields)

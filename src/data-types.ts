@@ -2,9 +2,11 @@ import type { AnySize } from "./types";
 
 export type u8 = number & { /* @hidden */ _u8?: never };
 export type u16 = number & { /* @hidden */ _u16?: never };
+export type u24 = number & { /* @hidden */ _u24?: never };
 export type u32 = number & { /* @hidden */ _u32?: never };
 export type i8 = number & { /* @hidden */ _i8?: never };
 export type i16 = number & { /* @hidden */ _i16?: never };
+export type i24 = number & { /* @hidden */ _i24?: never };
 export type i32 = number & { /* @hidden */ _i32?: never };
 export type f16 = number & { /* @hidden */ _f16?: never };
 export type f24 = number & { /* @hidden */ _f24?: never };

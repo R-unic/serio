@@ -1,6 +1,8 @@
 import { sizeOfNumberType, sign } from "./utility";
 import { f24 } from "./utility/f24";
 import { f16 } from "./utility/f16";
+import { u24 } from "./utility/u24";
+import { i24 } from "./utility/i24";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { IntType, Primitive, SerializedData, SerializerSchema } from "./types";
@@ -43,6 +45,9 @@ export function getDeserializeFunction<T>(
       case "u16":
         offset += 2;
         return readu16(buf, currentOffset);
+      case "u24":
+        offset += 3;
+        return u24.read(buf, currentOffset);
       case "u32":
         offset += 4;
         return readu32(buf, currentOffset);
@@ -52,6 +57,9 @@ export function getDeserializeFunction<T>(
       case "i16":
         offset += 2;
         return readi16(buf, currentOffset);
+      case "i24":
+        offset += 3;
+        return i24.read(buf, currentOffset);
       case "i32":
         offset += 4;
         return readi32(buf, currentOffset);

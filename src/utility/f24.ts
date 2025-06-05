@@ -1,32 +1,11 @@
 import { LOG2, NaN } from "../constants";
+import { u24 } from "./u24";
 
-const { readu8 } = buffer;
 const { floor, log, huge: INF } = math;
 
 export namespace f24 {
   export function read(buf: buffer, offset = 0): number {
-    const b0 = readu8(buf, offset);
-    const b1 = readu8(buf, offset + 1);
-    const b2 = readu8(buf, offset + 2);
-    return toF32((b2 << 16) | (b1 << 8) | b0);
-  }
-
-  export function toF32(n: number): number {
-    const sign = n >>> 23 === 1;
-    const signMult = sign ? -1 : 1;
-    const exponent = (n >>> 16) & 0x7F; // 7 bits
-    const mantissa = n & 0xFFFF;        // 16 bits
-
-    if (exponent === 0)
-      return mantissa === 0
-        ? 0 * signMult
-        : 2 ** -78 * signMult * mantissa;
-    else if (exponent === 0x7F)
-      return mantissa !== 0
-        ? NaN
-        : (sign ? -INF : INF);
-
-    return signMult * (1 + mantissa / 65536) * 2 ** (exponent - 63);
+    return toF32(u24.read(buf, offset));
   }
 
   export function fromF32(n: number): number {
@@ -49,5 +28,23 @@ export namespace f24 {
     const mantissa = floor((n / 2 ** exponent - 1) * 65536 + 0.5);
     const exponentBits = exponent + 63;
     return (sign << 23) | (exponentBits << 16) | mantissa;
+  }
+
+  function toF32(n: number): number {
+    const sign = n >>> 23 === 1;
+    const signMult = sign ? -1 : 1;
+    const exponent = (n >>> 16) & 0x7F; // 7 bits
+    const mantissa = n & 0xFFFF;        // 16 bits
+
+    if (exponent === 0)
+      return mantissa === 0
+        ? 0 * signMult
+        : 2 ** -78 * signMult * mantissa;
+    else if (exponent === 0x7F)
+      return mantissa !== 0
+        ? NaN
+        : (sign ? -INF : INF);
+
+    return signMult * (1 + mantissa / 65536) * 2 ** (exponent - 63);
   }
 }
