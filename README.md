@@ -42,14 +42,16 @@ Serio can serialize many data types, including numeric types not natively suppor
 
 ### Extended Support
 
-Serio supports data types that are not natively supported by the `buffer` library or Roblox. Currently the only two examples of this are `f24` and `f16` (though `u24` is planned).
+Serio supports data types that are not natively supported by the `buffer` library or Roblox. Currently the only examples of this are `f24`,`f16`, `u24`, and `i24`.
 
 ```ts
-import type { f16, f24 } from "@rbxts/serio";
+import type { f16, f24, u24, i24 } from "@rbxts/serio";
 
 interface CoolTypes {
   readonly a: f16;
   readonly b: f24;
+  readonly c: u24;
+  readonly d: i24;
 }
 ```
 
@@ -58,7 +60,7 @@ interface CoolTypes {
 Serio encourages full customization over the size of serialed values.
 
 ```ts
-import type { List, Vector, i8, u8, i16, u16 } from "@rbxts/serio";
+import type { List, Vector, ScaleOffset, i8, u8, i16, u16 } from "@rbxts/serio";
 
 // serialize the length of the array/string/tuple/set/map as a u8, allowing a maximum of 255 elements (which most arrays under under anyways)
 createSerializer<List<string, u8>>();
@@ -76,6 +78,9 @@ createSerializer<Vector<i8, i8, i8>>();
 
 // serialize positional X, Y, and Z as i16s
 createSerializer<Transform<i16>>(); // (cframe)
+
+// serialize Scale as an f32, and Offset as a u8
+createSerializer<ScaleOffset<f32, u8>>(); // (udim)
 ```
 
 ### Packing
@@ -88,13 +93,34 @@ This doesn't just affect booleans though, it also affects:
 
 - Optional values
   - Boolean for whether the value exists
+- UDim2s
+  - Optimization for [UDim2 special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L123)
+  - Boolean for whether the UDim2 was optimized
 - Vector3s
-  - Optimization for [vector special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L35)
+  - Optimization for [vector special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L37)
   - Boolean for whether the vector was optimized
 - CFrames
-  - Optimization for [vector special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L35) and [axis aligned rotation special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L6)
+  - Optimization for [vector special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L37) and [axis aligned rotation special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L8)
   - Boolean for whether the position was optimized
   - Boolean for whether the rotation was optimized
+
+### Supported Types
+
+- All primitives
+- Tuples
+- Objects
+- Array<T>
+- Map<K, V>
+- Set<T>
+- CFrame
+- Vector3
+- UDim
+- UDim2
+- Color3
+- ColorSequence
+- NumberSequence
+- Literal unions
+- Enums
 
 ## Optimization
 
