@@ -27,8 +27,8 @@ export function getDeserializeFunction<T>(
   let blobIndex = 0;
   let packing = false;
 
-  function deserialize(meta: SerializerSchema): unknown {
-    const currentOffset = offset;
+  function deserialize(meta: SerializerSchema, serializeOffset = offset): unknown {
+    const currentOffset = serializeOffset;
 
     switch (meta[0]) {
       case "u8":
@@ -104,6 +104,23 @@ export function getDeserializeFunction<T>(
 
         offset += bytesRead;
         return new NumberSequence(keypoints);
+      }
+      case "colorsequence": {
+        const keypointCount = readu8(buf, currentOffset);
+        const keypoints: ColorSequenceKeypoint[] = [];
+        let bytesRead = 1;
+
+        for (const i of $range(1, keypointCount)) {
+          const keypointOffset = currentOffset + 1 + 5 * (i - 1);
+          const time = readu16(buf, keypointOffset) / 0xFFFF;
+          const value = deserialize(["color"], keypointOffset + 2) as Color3;
+
+          bytesRead += 5;
+          keypoints.push(new ColorSequenceKeypoint(time, value));
+        }
+
+        offset += bytesRead;
+        return new ColorSequence(keypoints);
       }
       case "color": {
         const r = readu8(buf, currentOffset) as number;

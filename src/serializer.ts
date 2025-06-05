@@ -186,6 +186,21 @@ export function getSerializeFunction<T>(
 
         break;
       }
+      case "colorsequence": {
+        const keypoints = (value as ColorSequence).Keypoints;
+        const keypointCount = keypoints.size();
+        allocate(1 + keypointCount * 5);
+        writeu8(buf, currentOffset, keypointCount);
+
+        for (const i of $range(1, keypointCount)) {
+          const keypointOffset = currentOffset + 1 + 5 * (i - 1);
+          const keypoint = keypoints[i - 1];
+          writeu16(buf, keypointOffset, keypoint.Time * 0xFFFF);
+          serialize(keypoint.Value, ["color"], keypointOffset + 2);
+        }
+
+        break;
+      }
       case "color": {
         const color = value as Color3;
         allocate(3);
