@@ -89,10 +89,10 @@ This doesn't just affect booleans though, it also affects:
 - Optional values
   - Boolean for whether the value exists
 - Vector3s
-  - Optimization for [vector special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L33)
+  - Optimization for [vector special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L35)
   - Boolean for whether the vector was optimized
 - CFrames
-  - Optimization for [vector special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L33) and [axis aligned rotation special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L6)
+  - Optimization for [vector special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L35) and [axis aligned rotation special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L6)
   - Boolean for whether the position was optimized
   - Boolean for whether the rotation was optimized
 
