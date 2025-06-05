@@ -1,6 +1,6 @@
 import type { FindDiscriminator, IsDiscriminableUnion, IsLiteralUnion, IsUnion } from "./unions";
 import type { HasRest, RestType, SplitRest } from "./tuples";
-import type { f32, u32 } from "../data-types";
+import type { f32, u16, u32 } from "../data-types";
 
 type IsNumber<T, K extends string> = `_${K}` extends keyof T ? true : false;
 type HasNominal<T> = T extends T ? (T extends `_nominal_${string}` ? true : never) : never;
@@ -78,6 +78,14 @@ export type SerializerMetadata<T> =
   ? ["string", SerializerMetadata<V>]
   : [T] extends [string]
   ? ["string", SerializerMetadata<u32>]
+  : ["_udim", T] extends [keyof T, { _udim?: [infer Scale, infer Offset] }]
+  ? ["udim", SerializerMetadata<Scale>, SerializerMetadata<Offset>]
+  : [T] extends [UDim]
+  ? ["udim", SerializerMetadata<f32>, SerializerMetadata<u16>]
+  : ["_udim2", T] extends [keyof T, { _udim2?: [infer ScaleX, infer OffsetX, infer ScaleY, infer OffsetY] }]
+  ? ["udim2", SerializerMetadata<ScaleX>, SerializerMetadata<OffsetX>, SerializerMetadata<ScaleY>, SerializerMetadata<OffsetY>]
+  : [T] extends [UDim2]
+  ? ["udim2", SerializerMetadata<f32>, SerializerMetadata<u16>, SerializerMetadata<f32>, SerializerMetadata<u16>]
   : ["_vector", T] extends [keyof T, { _vector?: [infer X, infer Y, infer Z] }]
   ? ["vector", SerializerMetadata<X>, SerializerMetadata<Y>, SerializerMetadata<Z>]
   : [T] extends [Vector3]

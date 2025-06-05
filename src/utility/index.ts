@@ -1,4 +1,4 @@
-import type { FloatType, IntType, Primitive } from "../types";
+import type { NumberType, Primitive } from "../types";
 
 const { info } = debug;
 const { sort } = table;
@@ -23,7 +23,7 @@ export function getSortedEnumItems(enumObject: Enum): EnumItem[] {
   return enumItems;
 }
 
-export function sizeOfNumberType([kind]: Primitive<IntType | FloatType>): number {
+export function sizeOfNumberType([kind]: Primitive<NumberType>): number {
   switch (kind) {
     case "u8":
     case "i8":

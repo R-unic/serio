@@ -4,11 +4,12 @@ import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
 import { u24 } from "./utility/u24";
 import { i24 } from "./utility/i24";
-import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
+import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
 
 const { min, max, ceil, log, map, pi: PI } = math;
+const { magnitude } = vector;
 const {
   copy, create: createBuffer, len: bufferLength,
   writei8, writei16, writei32, writeu8, writeu16, writeu32, writef32, writef64, writestring
@@ -167,6 +168,34 @@ export function getSerializeFunction<T>(
 
         allocate(1);
         writeu8(buf, currentOffset, enumIndex);
+        break;
+      }
+      case "udim": {
+        const [_, xType, yType] = meta;
+        const udim = value as UDim;
+        serialize(udim.Scale, xType);
+        serialize(udim.Offset, yType);
+        break;
+      }
+      case "udim2": {
+        const [_, scaleXType, offsetXType, scaleYType, offsetYType] = meta;
+        const udim2 = value as UDim2;
+        if (packing) {
+          // 3 bits for special cases
+          const specialCase = COMMON_UDIM2S.indexOf(udim2);
+          const isOptimized = specialCase !== -1;
+          const packed = isOptimized ? specialCase : 0x7;
+          bits.push(isOptimized);
+
+          if (isOptimized) {
+            allocate(1);
+            writeu8(buf, currentOffset, packed);
+            break;
+          }
+        }
+
+        serialize(udim2.X, ["udim", scaleXType, offsetXType]);
+        serialize(udim2.Y, ["udim", scaleYType, offsetYType]);
         break;
       }
       case "vector": {
@@ -377,7 +406,10 @@ export function getSerializeFunction<T>(
       }
       case "packed": {
         const [_, innerType] = meta;
-        togglePacking(true, () => serialize(value, innerType));
+        const enclosing = packing;
+        packing = true;
+        serialize(value, innerType);
+        packing = enclosing;
         break;
       }
 
@@ -391,16 +423,16 @@ export function getSerializeFunction<T>(
     }
   }
 
-  function writeBits(buf: buffer, offset: number, bitOffset: number, bytes: number, variable: boolean): void {
+  function writeBits(buf: buffer, offset: number, bitOffset: number, byteCount: number, variable: boolean): void {
     const bitSize = bits.size();
-    for (const byte of $range(0, bytes - 1)) {
+    for (const i of $range(0, byteCount - 1)) {
       let currentByte = 0;
       for (const bit of $range(variable ? 1 : 0, min(7, bitSize - bitOffset))) {
         currentByte += (bits[bitOffset] ? 1 : 0) << bit;
         bitOffset++;
       }
 
-      if (variable && byte !== bytes - 1)
+      if (variable && i !== byteCount - 1)
         currentByte++;
 
       writeu8(buf, offset, currentByte);
@@ -446,7 +478,7 @@ export function getSerializeFunction<T>(
 }
 
 function fuzzyEq(a: Vector3, b: Vector3, epsilon = 1e-6): boolean {
-  return vector.magnitude(a.sub(b) as never) <= epsilon;
+  return magnitude(a.sub(b) as never) <= epsilon;
 }
 
 function createSerializedData(trimmed: buffer, blobs: defined[]): SerializedData {

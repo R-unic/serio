@@ -15,6 +15,20 @@ export type f64 = number & { /* @hidden */ _f64?: never };
 
 export type String<LengthType extends AnySize = u32> = string & { /* @hidden */ _string?: [LengthType] };
 
+/** UDim */
+export type ScaleOffset<
+  Scale extends number = f32,
+  Offset extends number = u16
+> = UDim & { /* @hidden */ _udim?: [Scale, Offset] };
+
+/** UDim2 */
+export type ScaleOffset2<
+  ScaleX extends number = f32,
+  OffsetX extends number = u16,
+  ScaleY extends number = ScaleX,
+  OffsetY extends number = OffsetX
+> = UDim2 & { /* @hidden */ _udim2?: [ScaleX, OffsetX, ScaleY, OffsetY] };
+
 /** Vector3 */
 export type Vector<
   X extends number = f32,

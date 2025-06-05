@@ -101,6 +101,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       schema = ["object", newFields];
       break;
     }
+    case "udim2":
     case "vector":
     case "cframe":
     case "bool":

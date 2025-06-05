@@ -3,9 +3,9 @@ import { f24 } from "./utility/f24";
 import { f16 } from "./utility/f16";
 import { u24 } from "./utility/u24";
 import { i24 } from "./utility/i24";
-import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
+import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
-import type { IntType, Primitive, SerializedData, SerializerSchema } from "./types";
+import type { NumberType, Primitive, SerializedData, SerializerSchema } from "./types";
 
 const { ceil, map, pi: PI } = math;
 const { create: createVector } = vector;
@@ -25,15 +25,6 @@ export function getDeserializeFunction<T>(
   let blobs: defined[] | undefined;
   let blobIndex = 0;
   let packing = false;
-
-  function togglePacking<T = void>(on: boolean, f: () => T): T {
-    const enclosing = packing;
-    packing = on;
-    const value = f();
-    packing = enclosing;
-
-    return value;
-  }
 
   function deserialize(meta: SerializerSchema): unknown {
     const currentOffset = offset;
@@ -95,12 +86,36 @@ export function getDeserializeFunction<T>(
 
         return sortedEnums[meta[1]!][index];
       }
+      case "udim": {
+        const [_, scaleType, offsetType] = meta;
+        const scale = deserialize(scaleType) as number;
+        const offset = deserialize(offsetType) as number;
+        return new UDim(scale, offset);
+      }
+      case "udim2": {
+        const [_, scaleXType, offsetXType, scaleYType, offsetYType] = meta;
+        if (packing) {
+          const isOptimized = bits[bitIndex++];
+          if (isOptimized) {
+            const packed = readu8(buf, currentOffset);
+            offset += 1;
+
+            const index = packed & 0x7
+            if (index !== 0x7)
+              return COMMON_UDIM2S[index];
+          }
+        }
+
+        const scaleX = deserialize(scaleXType) as number;
+        const offsetX = deserialize(offsetXType) as number;
+        const scaleY = deserialize(scaleYType) as number;
+        const offsetY = deserialize(offsetYType) as number;
+        return new UDim2(scaleX, offsetX, scaleY, offsetY);
+      }
       case "vector": {
         const [_, xType, yType, zType] = meta;
         if (packing) {
-          const i = bitIndex++;
-          const isOptimized = bits[i];
-
+          const isOptimized = bits[bitIndex++];
           if (isOptimized) {
             const packed = readu8(buf, currentOffset);
             offset += 1;
@@ -265,7 +280,12 @@ export function getDeserializeFunction<T>(
       }
       case "packed": {
         const [_, innerType] = meta;
-        return togglePacking(true, () => deserialize(innerType));
+        const enclosing = packing;
+        packing = true;
+        const value = deserialize(innerType);
+        packing = enclosing;
+
+        return value;
       }
 
       case "blob":
@@ -276,7 +296,7 @@ export function getDeserializeFunction<T>(
     }
   }
 
-  function deserializeCFrame(xType: Primitive<IntType>, yType: Primitive<IntType>, zType: Primitive<IntType>) {
+  function deserializeCFrame(xType: Primitive<NumberType>, yType: Primitive<NumberType>, zType: Primitive<NumberType>): CFrame {
     const currentOffset = offset;
     const mappedX = readu16(buf, currentOffset);
     let mappedY = readi16(buf, currentOffset + 2);
