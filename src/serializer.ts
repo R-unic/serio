@@ -142,9 +142,9 @@ export function getSerializeFunction<T>(
       }
       case "vector": {
         const [_, xType, yType, zType] = meta;
-        const vector = value as Vector3;
+        const vector3 = value as Vector3;
         if (packing) {
-          const specialCase = COMMON_VECTORS.indexOf(vector);
+          const specialCase = COMMON_VECTORS.findIndex(v => fuzzyEq(v, vector3));
           const isOptimized = specialCase !== -1;
           const packed = isOptimized ? specialCase : 0x10;
           bits.push(isOptimized);
@@ -156,9 +156,9 @@ export function getSerializeFunction<T>(
           }
         }
 
-        serialize(vector.X, xType);
-        serialize(vector.Y, yType);
-        serialize(vector.Z, zType);
+        serialize(vector3.X, xType);
+        serialize(vector3.Y, yType);
+        serialize(vector3.Z, zType);
         break;
       }
       case "cframe": {
@@ -420,6 +420,10 @@ export function getSerializeFunction<T>(
 
     return createSerializedData(trimmed, blobs);
   };
+}
+
+function fuzzyEq(a: Vector3, b: Vector3, epsilon = 1e-6): boolean {
+  return vector.magnitude(a.sub(b) as never) <= epsilon;
 }
 
 function createSerializedData(trimmed: buffer, blobs: defined[]): SerializedData {
