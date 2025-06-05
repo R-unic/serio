@@ -1,5 +1,7 @@
 
-import { f32ToF16, f32ToF24, sizeOfNumberType, sign, CF__index } from "./utility";
+import { sizeOfNumberType, sign, CF__index } from "./utility";
+import { f16 } from "./utility/f16";
+import { f24 } from "./utility/f24";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
@@ -36,8 +38,8 @@ export function getSerializeFunction<T>(
     const newSize = 2 ** ceil(log(offset) / log(2));
     const oldBuffer = buf;
     currentSize = newSize;
-    buf = buffer.create(newSize);
-    buffer.copy(buf, 0, oldBuffer);
+    buf = createBuffer(newSize);
+    copy(buf, 0, oldBuffer);
   }
 
   function serialize(value: unknown, meta: SerializerSchema, serializeOffset = offset): void {
@@ -75,18 +77,18 @@ export function getSerializeFunction<T>(
         break;
       }
       case "f16": {
-        const f16 = f32ToF16(value as never);
+        const bytes = f16.fromF32(value as never);
         allocate(2);
-        writeu8(buf, currentOffset, f16 & 0xFF); // lower byte
-        writeu8(buf, currentOffset + 1, f16 >> 8); // upper byte
+        writeu8(buf, currentOffset, bytes & 0xFF); // lower byte
+        writeu8(buf, currentOffset + 1, bytes >> 8); // upper byte
         break;
       }
       case "f24": {
-        const f24 = f32ToF24(value as never);
+        const bytes = f24.fromF32(value as never);
         allocate(3);
-        writeu8(buf, currentOffset, f24 & 0xFF); // lower byte
-        writeu8(buf, currentOffset + 1, f24 >> 8); // middle byte
-        writeu8(buf, currentOffset + 2, f24 >> 16); // upper byte
+        writeu8(buf, currentOffset, bytes & 0xFF); // lower byte
+        writeu8(buf, currentOffset + 1, bytes >> 8); // middle byte
+        writeu8(buf, currentOffset + 2, bytes >> 16); // upper byte
         break;
       }
       case "f32": {
@@ -173,6 +175,7 @@ export function getSerializeFunction<T>(
       case "cframe": {
         const [_, xType, yType, zType] = meta;
         const cframe = value as CFrame;
+        const position = CF__index(cframe, "Position");
 
         if (packing) {
           // 1-5: Orientation, 6-7: Position, 8: unused
@@ -180,7 +183,6 @@ export function getSerializeFunction<T>(
           let optimizedRotation = false;
           let packed = 0;
 
-          const position = CF__index(cframe, "Position");
           const rotation = CF__index(cframe, "Rotation");
           if (position === Vector3.zero) {
             optimizedPosition = true;
@@ -225,9 +227,9 @@ export function getSerializeFunction<T>(
             const mappedY = map(axis.Y, -maxY, maxY, 0, 2 ** 15 - 1) * zSign;
             const mappedAngle = map(angle, 0, PI, 0, 2 ** 16 - 1);
 
-            buffer.writeu16(buf, newOffset, mappedX);
-            buffer.writei16(buf, newOffset + 2, mappedY);
-            buffer.writeu16(buf, newOffset + 4, mappedAngle);
+            writeu16(buf, newOffset, mappedX);
+            writei16(buf, newOffset + 2, mappedY);
+            writeu16(buf, newOffset + 4, mappedAngle);
             newOffset += 6;
           }
 
@@ -251,10 +253,7 @@ export function getSerializeFunction<T>(
         writeu16(buf, currentOffset, mappedX);
         writei16(buf, currentOffset + 2, mappedY);
         writeu16(buf, currentOffset + 4, mappedAngle);
-
-        serialize(cframe.X, xType);
-        serialize(cframe.Y, yType);
-        serialize(cframe.Z, zType);
+        serialize(position, ["vector", xType, yType, zType], currentOffset + 6);
         break;
       }
       case "list": {

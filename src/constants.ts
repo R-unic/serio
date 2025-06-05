@@ -1,6 +1,6 @@
 // This does not account for potential floating point drift but this is likely not an issue for axis aligned orientations.
 
-const { rad } = math;
+const { rad, log } = math;
 const angles = CFrame.Angles;
 
 export const AXIS_ALIGNED_ORIENTATIONS = [
@@ -113,3 +113,6 @@ export const COMMON_VECTORS = [
   vector.create(1, -1, -1),
   vector.create(-1, 1, -1)
 ] as unknown as Vector3[];
+
+export const NaN = 0 / 0;
+export const LOG2 = log(2);

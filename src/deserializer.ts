@@ -1,7 +1,9 @@
-import { sizeOfNumberType, readf16, readf24, sign } from "./utility";
+import { sizeOfNumberType, sign } from "./utility";
+import { f24 } from "./utility/f24";
+import { f16 } from "./utility/f16";
+import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { IntType, Primitive, SerializedData, SerializerSchema } from "./types";
-import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "./constants";
 
 const { ceil, map, pi: PI } = math;
 const { create: createVector } = vector;
@@ -55,10 +57,10 @@ export function getDeserializeFunction<T>(
         return readi32(buf, currentOffset);
       case "f16":
         offset += 2;
-        return readf16(buf, currentOffset);
+        return f16.read(buf, currentOffset);
       case "f24":
         offset += 3;
-        return readf24(buf, currentOffset);
+        return f24.read(buf, currentOffset);
       case "f32":
         offset += 4;
         return readf32(buf, currentOffset);
