@@ -226,6 +226,31 @@ class SerializationTest {
   }
 
   @Fact
+  public object(): void {
+    interface Schema {
+      readonly a: u8;
+      readonly b: boolean;
+      readonly c: "a" | "b" | "c";
+      readonly d: i32;
+    }
+
+    const value: Schema = { a: 69, b: false, c: "b", d: -42069 };
+    const { buf } = this.serialize<Schema>(value);
+    Assert.defined(buf);
+    Assert.equal(7, len(buf));
+
+    const a = readu8(buf, 0);
+    const b = readu8(buf, 1) === 1;
+    const cIndex = readu8(buf, 2);
+    const c = cIndex === 0 ? "a" : cIndex === 1 ? "b" : "c";
+    const d = readi32(buf, 3);
+    Assert.equal(value.a, a);
+    Assert.equal(value.b, b);
+    Assert.equal(value.c, c);
+    Assert.equal(value.d, d);
+  }
+
+  @Fact
   public array(): void {
     const value: number[] = [1, 2, 3, 4];
     const { buf } = this.serialize<u8[]>(value);
@@ -339,6 +364,7 @@ class SerializationTest {
     }
   }
 
+  @Fact
   public vector(): void {
     const value = vector.create(1, 2, 3) as unknown as Vector3;
     const { buf } = this.serialize<Vector3>(value);
@@ -353,11 +379,12 @@ class SerializationTest {
     Assert.equal(3, z);
   }
 
+  @Fact
   public vectorCustom(): void {
     const value = vector.create(1, 2, 3) as unknown as Vector3;
     const { buf } = this.serialize<Vector<u8>>(value);
     Assert.defined(buf);
-    Assert.equal(12, len(buf));
+    Assert.equal(3, len(buf));
 
     const x = readu8(buf, 0);
     const y = readu8(buf, 1);
