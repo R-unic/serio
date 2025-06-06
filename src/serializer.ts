@@ -243,7 +243,7 @@ export function getSerializeFunction<T>(
         if (packing) {
           const specialCase = COMMON_VECTORS.findIndex(v => fuzzyEq(v, vector3));
           const isOptimized = specialCase !== -1;
-          const packed = isOptimized ? specialCase : 0x7F;
+          const packed = isOptimized ? specialCase : 0x3F;
           bits.push(isOptimized);
 
           if (isOptimized) {
@@ -289,13 +289,9 @@ export function getSerializeFunction<T>(
           const isOptimized = optimizedPosition || optimizedRotation;
           bits.push(isOptimized);
 
-          const xSize = sizeOfNumberType(xType);
-          const ySize = sizeOfNumberType(yType);
-          const zSize = sizeOfNumberType(zType);
           const headerBytes = isOptimized ? 1 : 0;
           const rotationBytes = optimizedRotation ? 0 : 6;
-          const positionBytes = optimizedPosition ? 0 : xSize + ySize + zSize;
-          const totalBytes = headerBytes + rotationBytes + positionBytes;
+          const totalBytes = headerBytes + rotationBytes;
           allocate(totalBytes);
 
           let newOffset = currentOffset;
@@ -319,10 +315,8 @@ export function getSerializeFunction<T>(
             newOffset += 6;
           }
 
-          if (!optimizedPosition) {
+          if (!optimizedPosition)
             serialize(position, ["vector", xType, yType, zType], newOffset);
-            offset -= positionBytes;
-          }
 
           break;
         }
@@ -339,7 +333,7 @@ export function getSerializeFunction<T>(
         writeu16(buf, currentOffset, mappedX);
         writei16(buf, currentOffset + 2, mappedY);
         writeu16(buf, currentOffset + 4, mappedAngle);
-        serialize(position, ["vector", xType, yType, zType], currentOffset + 6);
+        serialize(position, ["vector", xType, yType, zType]);
         break;
       }
       case "list": {

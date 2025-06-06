@@ -164,8 +164,8 @@ export function getDeserializeFunction<T>(
             const packed = readu8(buf, currentOffset);
             offset += 1;
 
-            const index = packed & 0x7F
-            if (index !== 0x7F)
+            const index = packed & 0x3F
+            if (index !== 0x3F)
               return COMMON_VECTORS[index];
           }
         }
