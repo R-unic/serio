@@ -5,7 +5,7 @@ import { u24 as u24Utility } from "./utility/u24";
 import { i24 as i24Utility } from "./utility/i24";
 import { f24 as f24Utility } from "./utility/f24";
 import { f16 as f16Utility } from "./utility/f16";
-import type { Serializer, SerializerMetadata, SerializedData, u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64 } from "./index";
+import type { Serializer, SerializerMetadata, SerializedData, u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64, String } from "./index";
 import createSerializer from "./index"
 
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
@@ -152,6 +152,41 @@ class SerializationTest {
 
     const result = readf64(buf, 0);
     Assert.equal(n, result);
+  }
+
+  @Fact
+  public string(): void {
+    const s = "abc123";
+    const { buf } = this.serialize<string>(s);
+    Assert.defined(buf);
+    Assert.equal(10, len(buf));
+
+    const length = readu32(buf, 0);
+    const result = readstring(buf, 4, length);
+    Assert.equal(s, result);
+  }
+
+  @Fact
+  public stringCustom(): void {
+    const s = "abc123";
+    const { buf } = this.serialize<String<u8>>(s);
+    Assert.defined(buf);
+    Assert.equal(7, len(buf));
+
+    const length = readu8(buf, 0);
+    const result = readstring(buf, 1, length);
+    Assert.equal(s, result);
+  }
+
+  @Fact
+  public boolean(): void {
+    const value = true;
+    const { buf } = this.serialize<boolean>(value);
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+
+    const result = readu8(buf, 0) === 1;
+    Assert.equal(value, result);
   }
 
   /** @metadata macro */
