@@ -1,37 +1,26 @@
-import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 import type { Modding } from "@flamework/core";
+import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 import { deunify } from "@rbxts/flamework-meta-utils";
 
-import { u24 as u24Utility } from "./utility/u24";
-import { i24 as i24Utility } from "./utility/i24";
-import { f24 as f24Utility } from "./utility/f24";
-import { f16 as f16Utility } from "./utility/f16";
+import { u24 as u24Utility } from "../../src/utility/u24";
+import { i24 as i24Utility } from "../../src/utility/i24";
+import { f24 as f24Utility } from "../../src/utility/f24";
+import { f16 as f16Utility } from "../../src/utility/f16";
+import { COMMON_VECTORS } from "../../src/constants";
+import { fuzzyEq } from "../../src/utility";
+import { assertFuzzyEqual, getSerializer, type SerializeMetadata } from "./utility";
 import type {
-  Serializer, SerializerMetadata, SerializedData,
+  SerializedData,
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap,
   Vector,
   Packed,
   Transform
-} from "./index";
-import createSerializer from "./index"
-import { COMMON_VECTORS } from "./constants";
-import { fuzzyEq } from "./utility";
+} from "../src/index";
 
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
 
-function fuzzyEqual(a: number, b: number, epsilon = 1e-6): void {
-  Assert.true(math.abs(a - b) <= epsilon);
-}
-
-interface SerializeMetadata<T> {
-  readonly text: Modding.Generic<T, "text">;
-  readonly serializerMeta: Modding.Many<SerializerMetadata<T>>;
-}
-
 class SerializationTest {
-  private readonly serializers = new Map<string, Serializer<any>>;
-
   @Fact
   public u8(): void {
     const n = 69;
@@ -128,7 +117,7 @@ class SerializationTest {
     Assert.equal(2, len(buf));
 
     const result = f16Utility.read(buf, 0);
-    fuzzyEqual(n, result, 0.05);
+    assertFuzzyEqual(n, result, 5e-2);
   }
 
   @Fact
@@ -139,7 +128,7 @@ class SerializationTest {
     Assert.equal(3, len(buf));
 
     const result = f24Utility.read(buf, 0);
-    fuzzyEqual(n, result, 1e-3);
+    assertFuzzyEqual(n, result, 1e-3);
   }
 
   @Fact
@@ -150,7 +139,7 @@ class SerializationTest {
     Assert.equal(4, len(buf));
 
     const result = readf32(buf, 0);
-    fuzzyEqual(n, result, 1e-4);
+    assertFuzzyEqual(n, result, 1e-4);
   }
 
   @Fact
@@ -579,15 +568,8 @@ class SerializationTest {
 
   /** @metadata macro */
   private serialize<T>(value: T, meta?: Modding.Many<SerializeMetadata<T>>): SerializedData {
-    if (meta === undefined)
-      return undefined!;
-
-    const { text, serializerMeta } = meta;
-    let serializer = this.serializers.get(text);
-    if (serializer === undefined)
-      this.serializers.set(text, serializer = createSerializer<T>(serializerMeta));
-
-    return serializer.serialize(value);
+    const serializer = getSerializer<T>(meta);
+    return serializer?.serialize(value)!;
   }
 }
 
