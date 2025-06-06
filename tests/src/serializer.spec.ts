@@ -254,6 +254,46 @@ class SerializationTest {
   }
 
   @Fact
+  public optional(): void {
+    {
+      const value = { foo: 69 };
+      const { buf } = this.serialize<{ foo?: u8 }>(value);
+      Assert.defined(buf);
+      Assert.equal(2, len(buf));
+
+      const exists = readu8(buf, 0) === 1;
+      const result = exists ? readu8(buf, 1) : undefined;
+      Assert.equal(value.foo, result);
+    }
+    {
+      const { buf } = this.serialize<{ foo?: u8 }>({});
+      Assert.defined(buf);
+      Assert.equal(1, len(buf));
+
+      const exists = readu8(buf, 0) === 1;
+      const result = exists ? readu8(buf, 1) : undefined;
+      Assert.undefined(result);
+    }
+  }
+
+  @Fact
+  public packedOptionals(): void {
+    const value = { foo: 69, bar: undefined };
+    const { buf } = this.serialize<{ foo?: u8, bar?: u8 }>(value);
+    Assert.defined(buf);
+    Assert.equal(3, len(buf));
+
+    const packed = readu8(buf, 0);
+    const isBitSet = (bit: number) => ((packed >> bit - 1) & 1) === 1;
+    const fooExists = isBitSet(1);
+    const barExists = isBitSet(2);
+    const foo = fooExists ? readu8(buf, 1) : undefined;
+    const bar = barExists ? readu8(buf, 2) : undefined;
+    Assert.equal(value.foo, foo);
+    Assert.equal(value.bar, bar);
+  }
+
+  @Fact
   public packedBooleans(): void {
     interface Schema {
       readonly a: boolean;
