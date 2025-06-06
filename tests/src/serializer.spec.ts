@@ -14,6 +14,8 @@ import type {
   Packed
 } from "./index";
 import createSerializer from "./index"
+import { COMMON_VECTORS } from "./constants";
+import { fuzzyEq } from "./utility";
 
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
 
@@ -444,6 +446,44 @@ class SerializationTest {
     Assert.equal(1, x);
     Assert.equal(2, y);
     Assert.equal(3, z);
+  }
+
+  @Theory
+  @InlineData(vector.zero)
+  @InlineData(vector.one)
+  @InlineData(vector.create(-1, -1, -1))
+  @InlineData(vector.create(1, 0, 0))
+  @InlineData(vector.create(0, 1, 0))
+  @InlineData(vector.create(0, 0, 1))
+  @InlineData(vector.create(-1, 0, 0))
+  @InlineData(vector.create(0, -1, 0))
+  @InlineData(vector.create(0, 0, -1))
+  @InlineData(vector.create(1, 1, 0))
+  @InlineData(vector.create(1, 0, 1))
+  @InlineData(vector.create(0, 1, 1))
+  @InlineData(vector.create(-1, -1, 0))
+  @InlineData(vector.create(-1, 0, -1))
+  @InlineData(vector.create(0, -1, -1))
+  @InlineData(vector.create(1, -1, 0))
+  @InlineData(vector.create(-1, 1, 0))
+  @InlineData(vector.create(0, -1, 1))
+  @InlineData(vector.create(0, 1, -1))
+  @InlineData(vector.create(-1, 0, 1))
+  @InlineData(vector.create(1, 0, -1))
+  public vectorSpecialCases(vector: vector): void {
+    const value = vector as unknown as Vector3;
+    const expectedIndex = COMMON_VECTORS.findIndex(v => fuzzyEq(v, value));
+    Assert.notEqual(-1, expectedIndex);
+
+    const { buf } = this.serialize<Packed<Vector<u8>>>(value);
+    Assert.defined(buf);
+    Assert.equal(2, len(buf));
+
+    const optimized = (readu8(buf, 0) & 1) === 1;
+    Assert.true(optimized);
+
+    const packed = readu8(buf, 1);
+    Assert.equal(expectedIndex, packed);
   }
 
   /** @metadata macro */

@@ -1,5 +1,5 @@
 
-import { sizeOfNumberType, sign, CF__index } from "./utility";
+import { sizeOfNumberType, sign, CF__index, fuzzyEq } from "./utility";
 import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
 import { u24 } from "./utility/u24";
@@ -9,7 +9,6 @@ import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
 
 const { min, max, ceil, log, map, pi: PI } = math;
-const { magnitude } = vector;
 const {
   copy, create: createBuffer, len: bufferLength,
   writei8, writei16, writei32, writeu8, writeu16, writeu32, writef32, writef64, writestring
@@ -508,10 +507,6 @@ export function getSerializeFunction<T>(
 
     return createSerializedData(trimmed, blobs);
   };
-}
-
-function fuzzyEq(a: Vector3, b: Vector3, epsilon = 1e-6): boolean {
-  return magnitude(a.sub(b) as never) <= epsilon;
 }
 
 function createSerializedData(trimmed: buffer, blobs: defined[]): SerializedData {
