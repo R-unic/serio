@@ -6,7 +6,7 @@
   "scripts": {
     "setup-rokit": "rokit trust lune-org/lune && rokit trust rojo-rbx/rojo && rokit install",
     "build": "npm run setup-rokit && rbxtsc ",
-    "prepublishOnly": "npm test && npm run build",
+    "prepublishOnly": "npm test && rbxtsc",
     "test": "npm run build -- -p tests && rojo build tests -o tests/test-environment.rbxl && lune run tests tests/test-environment.rbxl"
   },
   "keywords": ["roblox", "serde", "binary", "serialization", "serializer"],
