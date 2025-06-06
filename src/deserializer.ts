@@ -16,10 +16,14 @@ const {
 const { fromAxisAngle } = CFrame;
 const { fromRGB } = Color3;
 
+const LIMIT_16_BITS = 2 ** 16 - 1;
+const LIMIT_15_BITS = 2 ** 16 - 1;
+
 export function getDeserializeFunction<T>(
   { schema, containsPacking, containsUnknownPacking, minimumPackedBits, minimumPackedBytes, sortedEnums }: ProcessedInfo
 ): (data: SerializedData) => T {
-  let bits = table.create<boolean>(ceil(minimumPackedBits / 8) * 8);
+  const bitsLength = ceil(minimumPackedBits / 8) * 8;
+  let bits = table.create<boolean>(bitsLength);
   let bitIndex = 0;
   let buf!: buffer;
   let offset!: number;
@@ -198,16 +202,15 @@ export function getDeserializeFunction<T>(
               const zSign = sign(mappedY);
               mappedY *= zSign;
 
-              const max16Bits = 2 ** 16 - 1;
-              const axisX = map(mappedX, 0, max16Bits, -1, 1);
+              const axisX = map(mappedX, 0, LIMIT_16_BITS, -1, 1);
               let derivedMaximumSquared = 1 - axisX ** 2;
               const derivedMaximum = derivedMaximumSquared ** 0.5;
-              const axisY = map(mappedY, 0, 2 ** 15 - 1, -derivedMaximum, derivedMaximum);
+              const axisY = map(mappedY, 0, LIMIT_15_BITS, -derivedMaximum, derivedMaximum);
               derivedMaximumSquared -= axisY ** 2;
 
               const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
               const axis = createVector(axisX, axisY, axisZ) as unknown as Vector3;
-              const angle = map(mappedAngle, 0, max16Bits, 0, PI);
+              const angle = map(mappedAngle, 0, LIMIT_16_BITS, 0, PI);
 
               rotation = fromAxisAngle(axis, angle);
             }
@@ -350,16 +353,15 @@ export function getDeserializeFunction<T>(
     const zSign = sign(mappedY);
     mappedY *= zSign;
 
-    const max16Bits = 2 ** 16 - 1;
-    const axisX = map(mappedX, 0, max16Bits, -1, 1);
+    const axisX = map(mappedX, 0, LIMIT_16_BITS, -1, 1);
     let derivedMaximumSquared = 1 - axisX ** 2;
     const derivedMaximum = derivedMaximumSquared ** 0.5;
-    const axisY = map(mappedY, 0, 2 ** 15 - 1, -derivedMaximum, derivedMaximum);
+    const axisY = map(mappedY, 0, LIMIT_15_BITS, -derivedMaximum, derivedMaximum);
     derivedMaximumSquared -= axisY ** 2;
 
     const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
     const axis = createVector(axisX, axisY, axisZ) as unknown as Vector3;
-    const angle = map(mappedAngle, 0, max16Bits, 0, PI);
+    const angle = map(mappedAngle, 0, LIMIT_16_BITS, 0, PI);
     const axisAngle = fromAxisAngle(axis, angle);
     const position = deserialize(["vector", xType, yType, zType]) as Vector3;
 
@@ -398,7 +400,7 @@ export function getDeserializeFunction<T>(
     bitIndex = 0;
 
     if (containsPacking) {
-      bits = [];
+      bits = table.create<boolean>(bitsLength);
       readBits();
     }
 
