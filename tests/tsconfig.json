@@ -24,9 +24,9 @@
       "src",
       "../src"
     ],
-    "outDir": "out",
+    "outDir": "../out",
     "incremental": true,
-    "tsBuildInfoFile": "out/tsconfig.tsbuildinfo",
+    "tsBuildInfoFile": "../out/tsconfig.tsbuildinfo",
     "declaration": true,
     "plugins": [
       {
