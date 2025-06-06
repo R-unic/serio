@@ -11,7 +11,8 @@ import type {
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap,
   Vector,
-  Packed
+  Packed,
+  Transform
 } from "./index";
 import createSerializer from "./index"
 import { COMMON_VECTORS } from "./constants";
@@ -510,7 +511,7 @@ class SerializationTest {
   @InlineData(vector.create(0, 1, -1))
   @InlineData(vector.create(-1, 0, 1))
   @InlineData(vector.create(1, 0, -1))
-  public vectorSpecialCases(vector: vector): void {
+  public packedVectorSpecialCases(vector: vector): void {
     const value = vector as unknown as Vector3;
     const expectedIndex = COMMON_VECTORS.findIndex(v => fuzzyEq(v, value));
     Assert.notEqual(-1, expectedIndex);
@@ -524,6 +525,56 @@ class SerializationTest {
 
     const packed = readu8(buf, 1);
     Assert.equal(expectedIndex, packed);
+  }
+
+  @Fact
+  public cframe(): void {
+    const value = new CFrame(1, 2, 3);
+    const { buf } = this.serialize<CFrame>(value);
+    Assert.defined(buf);
+    Assert.equal(18, len(buf));
+
+    const x = readf32(buf, 6);
+    const y = readf32(buf, 10);
+    const z = readf32(buf, 14);
+    Assert.equal(1, x);
+    Assert.equal(2, y);
+    Assert.equal(3, z);
+  }
+
+  @Fact
+  public cframeCustom(): void {
+    const value = new CFrame(1, 2, 3);
+    const { buf } = this.serialize<Transform<u8>>(value);
+    Assert.defined(buf);
+    Assert.equal(9, len(buf));
+
+    const x = readu8(buf, 6);
+    const y = readu8(buf, 7);
+    const z = readu8(buf, 8);
+    Assert.equal(1, x);
+    Assert.equal(2, y);
+    Assert.equal(3, z);
+  }
+
+  @Theory
+  @InlineData(Vector3.zero, 0x20)
+  @InlineData(Vector3.one, 0x60)
+  public packedCFramePositionSpecialCases(position: Vector3, bits: number): void {
+    const value = new CFrame(position);
+    const { buf } = this.serialize<Packed<Transform<u8>>>(value);
+    Assert.defined(buf);
+    Assert.equal(2, len(buf));
+
+    const isOptimized = (readu8(buf, 0) & 1) === 1;
+    Assert.true(isOptimized);
+
+    const packed = readu8(buf, 1);
+    const optimizedPosition = packed & 0x60;
+    Assert.equal(bits, optimizedPosition);
+
+    const optimizedRotation = packed & 0x1F;
+    Assert.true(optimizedRotation !== 0x1F);
   }
 
   /** @metadata macro */

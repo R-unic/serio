@@ -1,15 +1,9 @@
 import type { NumberType, Primitive } from "../types";
 
-const { info } = debug;
 const { sort } = table;
 const { magnitude } = vector;
 
-type CF__index = <K extends keyof CFrame>(cf: CFrame, index: K) => CFrame[K];
-export const CF__index = select(2, xpcall(
-  // retarded never cast to avoid roblox-ts error 'Cannot index a method without calling it!'
-  () => CFrame.identity[undefined! as keyof CFrame] as never,
-  () => info(2, "f")[0]
-))[0] as CF__index;
+export * from "./fastcalls";
 
 export function fuzzyEq(a: Vector3, b: Vector3, epsilon = 1e-6): boolean {
   return magnitude(a.sub(b) as never) <= epsilon;
