@@ -1,13 +1,13 @@
 {
   "name": "@rbxts/serio",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "author": "runicly",
   "main": "out/src/init.luau",
   "scripts": {
     "setup-rokit": "rokit trust lune-org/lune && rokit trust rojo-rbx/rojo && rokit install",
-    "build": "npm run setup-rokit && rbxtsc -p tests",
-    "prepublishOnly": "npm test",
-    "test": "npm run build && rojo build tests -o tests/test-environment.rbxl && lune run tests tests/test-environment.rbxl"
+    "build": "npm run setup-rokit && rbxtsc ",
+    "prepublishOnly": "npm test && npm run build",
+    "test": "npm run build -- -p tests && rojo build tests -o tests/test-environment.rbxl && lune run tests tests/test-environment.rbxl"
   },
   "keywords": ["roblox", "serde", "binary", "serialization", "serializer"],
   "repository": {
@@ -16,9 +16,9 @@
   },
   "license": "ISC",
   "description": "Roblox buffer serialization library",
-  "types": "out/src/index.d.ts",
+  "types": "src/index.d.ts",
   "files": [
-    "out/src",
+    "src",
     "!**/*.tsbuildinfo"
   ],
   "publishConfig": {
