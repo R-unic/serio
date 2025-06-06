@@ -5,7 +5,7 @@ import { u24 as u24Utility } from "./utility/u24";
 import { i24 as i24Utility } from "./utility/i24";
 import { f24 as f24Utility } from "./utility/f24";
 import { f16 as f16Utility } from "./utility/f16";
-import type { Serializer, SerializerMetadata, SerializedData, u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64, String } from "./index";
+import type { Serializer, SerializerMetadata, SerializedData, u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64, String, List } from "./index";
 import createSerializer from "./index"
 import { deunify } from "@rbxts/flamework-meta-utils";
 
@@ -214,6 +214,34 @@ class SerializationTest {
 
     const index = readu8(buf, 0);
     Assert.equal(0, index);
+  }
+
+  @Fact
+  public array(): void {
+    const value: number[] = [1, 2, 3, 4];
+    const { buf } = this.serialize<u8[]>(value);
+    Assert.defined(buf);
+    Assert.equal(8, len(buf));
+
+    const length = readu32(buf, 0);
+    for (const i of $range(1, length)) {
+      const n = readu8(buf, 4 + (i - 1));
+      Assert.equal(value[i - 1], n);
+    }
+  }
+
+  @Fact
+  public arrayCustom(): void {
+    const value: number[] = [1, 2, 3, 4];
+    const { buf } = this.serialize<List<u8, u8>>(value);
+    Assert.defined(buf);
+    Assert.equal(5, len(buf));
+
+    const length = readu8(buf, 0);
+    for (const i of $range(1, length)) {
+      const n = readu8(buf, 1 + (i - 1));
+      Assert.equal(value[i - 1], n);
+    }
   }
 
   /** @metadata macro */
