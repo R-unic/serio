@@ -20,15 +20,14 @@ export interface ProcessedInfo {
 }
 
 function addPackedBit(info: Writable<ProcessedInfo>): void {
-  const newLocal = (info.flags & IterationFlags.Packed) === 0;
-  if (newLocal) return;
+  if ((info.flags & IterationFlags.Packed) === 0) return;
   info.containsPacking = true;
 
   if ((info.flags & IterationFlags.SizeUnknown) !== 0)
     info.containsUnknownPacking = true;
   else
     // We only keep track of guaranteed packing bits, which we can use for optimization.
-    info.minimumPackedBits += 1;
+    info.minimumPackedBits++;
 }
 
 /**
@@ -71,7 +70,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
         kind,
         name,
         options.map(([key, schema]): [unknown, SerializerSchema] => [key, schemaPass(schema, info)]),
-        isPackable ? -1 : optionsSize <= 256 ? 1 : 2,
+        isPackable ? -1 : (optionsSize > 256 ? 2 : 1),
       ];
       break;
     }
@@ -92,7 +91,11 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       // we add the existing value of `data[3]` (which is 1 if undefined is in the union) to `data[1]`
       // to determine the final required size.
       // A size of -1 means this isn't a union.
-      schema = [kind, possibleValues, size === -1 ? 0 : size + possibleValuesSize <= 256 ? 1 : 2];
+      const finalSize = size === -1
+        ? 0
+        : (size + possibleValuesSize > 256 ? 2 : 1);
+
+      schema = [kind, possibleValues, finalSize];
       break;
     }
     case "object": {

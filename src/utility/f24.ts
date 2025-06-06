@@ -1,7 +1,10 @@
 import { LOG2, NaN } from "../constants";
 import { u24 } from "./u24";
 
-const { floor, log, huge: INF } = math;
+const { abs, floor, log, huge: INF } = math;
+
+const MIN_NORMAL = 2 ** -62;
+const DENORM_SCALE = 2 ** -78;
 
 export namespace f24 {
   export function read(buf: buffer, offset = 0): number {
@@ -9,17 +12,15 @@ export namespace f24 {
   }
 
   export function fromF32(n: number): number {
-    const negative = n < 0;
-    let sign = negative ? 1 : 0;
-    if (negative)
-      n = -n;
+    let sign = n < 0 ? 1 : 0;
+    n = abs(n)
 
     if (n === INF)
       return (sign << 23) | (0x7F << 16);
     else if (n !== n)
       return (sign << 23) | (0x7F << 16) | 1;
-    else if (n < 2 ** -62) {
-      const bits = floor(n / 2 ** -78 + 0.5);
+    else if (n < MIN_NORMAL) {
+      const bits = floor(n / DENORM_SCALE + 0.5);
       return (sign << 23) | bits;
     } else if (n > 65504)
       return (sign << 23) | (0x7F << 16);
@@ -39,7 +40,7 @@ export namespace f24 {
     if (exponent === 0)
       return mantissa === 0
         ? 0 * signMult
-        : 2 ** -78 * signMult * mantissa;
+        : DENORM_SCALE * signMult * mantissa;
     else if (exponent === 0x7F)
       return mantissa !== 0
         ? NaN

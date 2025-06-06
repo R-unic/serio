@@ -3,6 +3,8 @@ import { LOG2, NaN } from "../constants";
 const { readu16 } = buffer;
 const { floor, log, huge: INF } = math;
 
+const DENORM_SCALE = 2 ** -24;
+
 export namespace f16 {
   export function read(buf: buffer, offset = 0): number {
     return toF32(readu16(buf, offset));
@@ -17,7 +19,7 @@ export namespace f16 {
     if (exponent === 0)
       return mantissa === 0
         ? 0 * signMult
-        : 2 ** -24 * signMult * mantissa;
+        : DENORM_SCALE * signMult * mantissa;
     else if (exponent === 0x1F)
       return mantissa !== 0
         ? NaN

@@ -28,30 +28,16 @@ export function getSortedEnumItems(enumObject: Enum): EnumItem[] {
   return enumItems;
 }
 
+const numberTypeSizes: Record<NumberType, number> = {
+  u8: 1, i8: 1,
+  u16: 2, i16: 2, f16: 2,
+  u24: 3, i24: 3, f24: 3,
+  u32: 4, i32: 4, f32: 4,
+  f64: 8,
+};
+
 export function sizeOfNumberType([kind]: Primitive<NumberType>): number {
-  switch (kind) {
-    case "u8":
-    case "i8":
-      return 1;
-
-    case "u16":
-    case "i16":
-    case "f16":
-      return 2;
-
-    case "u24":
-    case "i24":
-    case "f24":
-      return 3;
-
-    case "u32":
-    case "i32":
-    case "f32":
-      return 4;
-
-    case "f64":
-      return 8;
-  }
+  return numberTypeSizes[kind];
 }
 
 export function sign(n: number): -1 | 1 {

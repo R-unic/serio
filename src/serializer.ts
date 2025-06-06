@@ -15,6 +15,9 @@ const {
 } = buffer;
 const toAxisAngle = CFrame.identity.ToAxisAngle as (cf: CFrame) => ReturnType<CFrame["ToAxisAngle"]>;
 
+const LIMIT_16_BITS = 2 ** 16 - 1;
+const LIMIT_15_BITS = 2 ** 15 - 1;
+
 export function getSerializeFunction<T>(
   { schema, containsPacking, containsUnknownPacking, minimumPackedBits, minimumPackedBytes, sortedEnums }: ProcessedInfo
 ): (value: T) => SerializedData {
@@ -25,19 +28,10 @@ export function getSerializeFunction<T>(
   let blobs!: defined[];
   let packing = false;
 
-  function togglePacking<T = void>(on: boolean, f: () => T): T {
-    const enclosing = packing;
-    packing = on;
-    const value = f();
-    packing = enclosing;
-
-    return value;
-  }
-
   function allocate(size: number): void {
     if ((offset += size) <= currentSize) return;
 
-    const newSize = 2 ** ceil(log(offset) / log(2));
+    const newSize = max(currentSize * 2, offset);
     const oldBuffer = buf;
     currentSize = newSize;
     buf = createBuffer(newSize);
@@ -304,9 +298,9 @@ export function getSerializeFunction<T>(
             const zSign = sign(axis.Z);
             const xAxis = axis.X;
             const maxY = (1 - xAxis ** 2) ** 0.5;
-            const mappedX = map(xAxis, -1, 1, 0, 2 ** 16 - 1);
-            const mappedY = map(axis.Y, -maxY, maxY, 0, 2 ** 15 - 1) * zSign;
-            const mappedAngle = map(angle, 0, PI, 0, 2 ** 16 - 1);
+            const mappedX = map(xAxis, -1, 1, 0, LIMIT_16_BITS);
+            const mappedY = map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign;
+            const mappedAngle = map(angle, 0, PI, 0, LIMIT_16_BITS);
 
             writeu16(buf, newOffset, mappedX);
             writei16(buf, newOffset + 2, mappedY);
@@ -324,9 +318,9 @@ export function getSerializeFunction<T>(
         const zSign = sign(axis.Z);
         const xAxis = axis.X;
         const maxY = (1 - xAxis ** 2) ** 0.5;
-        const mappedX = map(xAxis, -1, 1, 0, 2 ** 16 - 1);
-        const mappedY = map(axis.Y, -maxY, maxY, 0, 2 ** 15 - 1) * zSign;
-        const mappedAngle = map(angle, 0, PI, 0, 2 ** 16 - 1);
+        const mappedX = map(xAxis, -1, 1, 0, LIMIT_16_BITS);
+        const mappedY = map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign;
+        const mappedAngle = map(angle, 0, PI, 0, LIMIT_16_BITS);
 
         allocate(6); // minimum
         writeu16(buf, currentOffset, mappedX);
@@ -357,17 +351,8 @@ export function getSerializeFunction<T>(
       case "union": {
         const [_, tagName, tagged, byteSize] = meta;
         const objectTag = (value as Map<unknown, unknown>).get(tagName);
-
-        let tagIndex = 0;
-        let tagMetadata!: SerializerSchema;
-        for (const i of $range(1, tagged.size())) {
-          const tagObject = tagged[i - 1];
-          if (tagObject[0] === objectTag) {
-            tagIndex = i - 1;
-            tagMetadata = tagObject[1];
-            break;
-          }
-        }
+        const tagMap = new Map(tagged.map<[unknown, [number, SerializerSchema]]>(([tag, schema], i) => [tag, [i, schema]]));
+        const [tagIndex, tagMetadata] = tagMap.get(objectTag)!;
 
         if (byteSize === 1) {
           allocate(1);
@@ -459,7 +444,9 @@ export function getSerializeFunction<T>(
     const bitSize = bits.size();
     for (const i of $range(0, byteCount - 1)) {
       let currentByte = 0;
-      for (const bit of $range(variable ? 1 : 0, min(7, bitSize - bitOffset))) {
+      const remainingBits = bitSize - bitOffset;
+      const bitsThisByte = min(7, max(0, remainingBits));
+      for (const bit of $range(variable ? 1 : 0, bitsThisByte)) {
         currentByte += (bits[bitOffset] ? 1 : 0) << bit;
         bitOffset++;
       }
