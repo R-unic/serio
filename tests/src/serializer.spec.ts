@@ -7,6 +7,7 @@ import { f24 as f24Utility } from "./utility/f24";
 import { f16 as f16Utility } from "./utility/f16";
 import type { Serializer, SerializerMetadata, SerializedData, u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64, String } from "./index";
 import createSerializer from "./index"
+import { deunify } from "@rbxts/flamework-meta-utils";
 
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
 
@@ -187,6 +188,32 @@ class SerializationTest {
 
     const result = readu8(buf, 0) === 1;
     Assert.equal(value, result);
+  }
+
+  @Fact
+  public literalUnions(): void {
+    type LiteralUnion = "a" | "b" | "c" | "d";
+    const members = deunify<LiteralUnion>();
+
+    const value: LiteralUnion = "d";
+    const { buf } = this.serialize<LiteralUnion>(value);
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+
+    const index = readu8(buf, 0);
+    Assert.equal(3, index);
+    Assert.equal(value, members[index]);
+  }
+
+  @Fact
+  public enums(): void {
+    const value = Enum.UserInputState.Begin;
+    const { buf } = this.serialize<Enum.UserInputState>(value);
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+
+    const index = readu8(buf, 0);
+    Assert.equal(0, index);
   }
 
   /** @metadata macro */
