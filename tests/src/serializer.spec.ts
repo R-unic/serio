@@ -1,13 +1,17 @@
 import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 import type { Modding } from "@flamework/core";
+import { deunify } from "@rbxts/flamework-meta-utils";
 
 import { u24 as u24Utility } from "./utility/u24";
 import { i24 as i24Utility } from "./utility/i24";
 import { f24 as f24Utility } from "./utility/f24";
 import { f16 as f16Utility } from "./utility/f16";
-import type { Serializer, SerializerMetadata, SerializedData, u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64, String, List } from "./index";
+import type {
+  Serializer, SerializerMetadata, SerializedData,
+  u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
+  String, List, HashSet, HashMap
+} from "./index";
 import createSerializer from "./index"
-import { deunify } from "@rbxts/flamework-meta-utils";
 
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
 
@@ -163,6 +167,8 @@ class SerializationTest {
     Assert.equal(10, len(buf));
 
     const length = readu32(buf, 0);
+    Assert.equal(s.size(), length);
+
     const result = readstring(buf, 4, length);
     Assert.equal(s, result);
   }
@@ -175,6 +181,8 @@ class SerializationTest {
     Assert.equal(7, len(buf));
 
     const length = readu8(buf, 0);
+    Assert.equal(s.size(), length);
+
     const result = readstring(buf, 1, length);
     Assert.equal(s, result);
   }
@@ -224,6 +232,8 @@ class SerializationTest {
     Assert.equal(8, len(buf));
 
     const length = readu32(buf, 0);
+    Assert.equal(value.size(), length);
+
     for (const i of $range(1, length)) {
       const n = readu8(buf, 4 + (i - 1));
       Assert.equal(value[i - 1], n);
@@ -238,9 +248,93 @@ class SerializationTest {
     Assert.equal(5, len(buf));
 
     const length = readu8(buf, 0);
+    Assert.equal(value.size(), length);
+
     for (const i of $range(1, length)) {
       const n = readu8(buf, 1 + (i - 1));
       Assert.equal(value[i - 1], n);
+    }
+  }
+
+  @Fact
+  public set(): void {
+    const value = new Set([1, 2, 3, 4]);
+    const { buf } = this.serialize<Set<u8>>(value);
+    Assert.defined(buf);
+    Assert.equal(8, len(buf));
+
+    const length = readu32(buf, 0);
+    Assert.equal(value.size(), length);
+
+    let i = 0;
+    for (const element of value) {
+      const n = readu8(buf, 4 + i++);
+      Assert.equal(element, n);
+    }
+  }
+
+  @Fact
+  public setCustom(): void {
+    const value = new Set([1, 2, 3, 4]);
+    const { buf } = this.serialize<HashSet<u8, u8>>(value);
+    Assert.defined(buf);
+    Assert.equal(5, len(buf));
+
+    const length = readu8(buf, 0);
+    Assert.equal(value.size(), length);
+
+    let i = 0;
+    for (const element of value) {
+      const n = readu8(buf, 1 + i++);
+      Assert.equal(element, n);
+    }
+  }
+
+  @Fact
+  public map(): void {
+    const value = new Map([
+      [10, true],
+      [20, false],
+      [30, true],
+      [40, false]
+    ]);
+
+    const { buf } = this.serialize<Map<u8, boolean>>(value);
+    Assert.defined(buf);
+    Assert.equal(12, len(buf));
+
+    const length = readu32(buf, 0);
+    Assert.equal(value.size(), length);
+
+    for (const i of $range(1, length, 2)) {
+      const k = readu8(buf, 4 + (i - 1));
+      const v = readu8(buf, 4 + 1 + (i - 1)) === 1;
+      Assert.true(value.has(k));
+      Assert.equal(value.get(k), v);
+    }
+  }
+
+  @Fact
+  public mapCustom(): void {
+    const value = new Map([
+      [10, true],
+      [20, false],
+      [30, true],
+      [40, false]
+    ]);
+
+    const { buf } = this.serialize<HashMap<u8, boolean, u8>>(value);
+    Assert.defined(buf);
+    Assert.equal(9, len(buf));
+
+    const length = readu8(buf, 0);
+    Assert.equal(value.size(), length);
+
+    for (const i of $range(1, length, 2)) {
+      const k = readu8(buf, 1 + (i - 1));
+      const v = readu8(buf, 1 + 1 + (i - 1)) === 1;
+      Assert.true(value.has(k));
+      Assert.equal(value.get(k), v);
     }
   }
 
