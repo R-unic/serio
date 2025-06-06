@@ -19,7 +19,7 @@
   "description": "",
   "types": "tests/out/src/index.d.ts",
   "files": [
-    "test/out/src",
+    "tests/out/src",
     "!**/*.tsbuildinfo"
   ],
   "publishConfig": {
