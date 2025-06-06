@@ -1,8 +1,8 @@
 {
   "name": "@rbxts/serio",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "author": "runicly",
-  "main": "out/src/init.luau",
+  "main": "out/init.luau",
   "scripts": {
     "setup-rokit": "rokit trust lune-org/lune && rokit trust rojo-rbx/rojo && rokit install",
     "build": "npm run setup-rokit && rbxtsc ",
@@ -16,9 +16,9 @@
   },
   "license": "ISC",
   "description": "Roblox buffer serialization library",
-  "types": "src/index.d.ts",
+  "types": "out/index.d.ts",
   "files": [
-    "src",
+    "out",
     "!**/*.tsbuildinfo"
   ],
   "publishConfig": {
