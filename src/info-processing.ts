@@ -114,6 +114,12 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       schema = [kind, schemaPass(schema[1], info), schema[2]];
       break;
     }
+    case "map": {
+      info.flags |= IterationFlags.SizeUnknown;
+
+      schema = [kind, schemaPass(schema[1], info), schemaPass(schema[2], info), schema[3]];
+      break;
+    }
     case "tuple": {
       const [_, elementTypes, restElementType] = schema;
       const fixedElements = elementTypes.map(v => schemaPass(v, info));
