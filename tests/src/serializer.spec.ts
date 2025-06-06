@@ -9,7 +9,8 @@ import { f16 as f16Utility } from "./utility/f16";
 import type {
   Serializer, SerializerMetadata, SerializedData,
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
-  String, List, HashSet, HashMap
+  String, List, HashSet, HashMap,
+  Vector
 } from "./index";
 import createSerializer from "./index"
 
@@ -336,6 +337,34 @@ class SerializationTest {
       Assert.true(value.has(k));
       Assert.equal(value.get(k), v);
     }
+  }
+
+  public vector(): void {
+    const value = vector.create(1, 2, 3) as unknown as Vector3;
+    const { buf } = this.serialize<Vector3>(value);
+    Assert.defined(buf);
+    Assert.equal(12, len(buf));
+
+    const x = readf32(buf, 0);
+    const y = readf32(buf, 4);
+    const z = readf32(buf, 8);
+    Assert.equal(1, x);
+    Assert.equal(2, y);
+    Assert.equal(3, z);
+  }
+
+  public vectorCustom(): void {
+    const value = vector.create(1, 2, 3) as unknown as Vector3;
+    const { buf } = this.serialize<Vector<u8>>(value);
+    Assert.defined(buf);
+    Assert.equal(12, len(buf));
+
+    const x = readu8(buf, 0);
+    const y = readu8(buf, 1);
+    const z = readu8(buf, 2);
+    Assert.equal(1, x);
+    Assert.equal(2, y);
+    Assert.equal(3, z);
   }
 
   /** @metadata macro */
