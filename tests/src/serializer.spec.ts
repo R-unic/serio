@@ -10,7 +10,8 @@ import type {
   Serializer, SerializerMetadata, SerializedData,
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap,
-  Vector
+  Vector,
+  Packed
 } from "./index";
 import createSerializer from "./index"
 
@@ -248,6 +249,57 @@ class SerializationTest {
     Assert.equal(value.b, b);
     Assert.equal(value.c, c);
     Assert.equal(value.d, d);
+  }
+
+  @Fact
+  public packedBooleans(): void {
+    interface Schema {
+      readonly a: boolean;
+      readonly b: boolean;
+      readonly c: boolean;
+      readonly d: boolean;
+      readonly e: boolean;
+      readonly f: boolean;
+      readonly g: boolean;
+      readonly h: boolean;
+    }
+
+    const value: Schema = { a: true, b: false, c: true, d: false, e: true, f: false, g: true, h: false };
+    const { buf } = this.serialize<Packed<Schema>>(value, {
+      // this is to guarantee the order of the fields
+      text: "Packed<Schema>",
+      serializerMeta: ["packed", ["object", [
+        ["a", ["bool"]],
+        ["b", ["bool"]],
+        ["c", ["bool"]],
+        ["d", ["bool"]],
+        ["e", ["bool"]],
+        ["f", ["bool"]],
+        ["g", ["bool"]],
+        ["h", ["bool"]]
+      ]]]
+    } as never);
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+
+    const packed = readu8(buf, 0);
+    const isBitSet = (bit: number) => ((packed >> bit - 1) & 1) === 1;
+    const a = isBitSet(1);
+    const b = isBitSet(2);
+    const c = isBitSet(3);
+    const d = isBitSet(4);
+    const e = isBitSet(5);
+    const f = isBitSet(6);
+    const g = isBitSet(7);
+    const h = isBitSet(8);
+    Assert.true(a);
+    Assert.false(b);
+    Assert.true(c);
+    Assert.false(d);
+    Assert.true(e);
+    Assert.false(f);
+    Assert.true(g);
+    Assert.false(h);
   }
 
   @Fact
