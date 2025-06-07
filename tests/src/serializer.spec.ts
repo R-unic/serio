@@ -8,7 +8,7 @@ import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
 import { COMMON_VECTORS } from "../../src/constants";
 import { fuzzyEq } from "../../src/utility";
-import { assertFuzzyEqual, getSerializer, type SerializeMetadata } from "./utility";
+import { assertFuzzyEqual, getSerializer, type LiteralUnion, type SerializeMetadata } from "./utility";
 import type {
   SerializedData,
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
@@ -181,9 +181,10 @@ class SerializationTest {
     Assert.equal(s, result);
   }
 
-  @Fact
-  public boolean(): void {
-    const value = true;
+  @Theory
+  @InlineData(true)
+  @InlineData(false)
+  public boolean(value: boolean): void {
     const { buf } = this.serialize<boolean>(value);
     Assert.defined(buf);
     Assert.equal(1, len(buf));
@@ -192,30 +193,35 @@ class SerializationTest {
     Assert.equal(value, result);
   }
 
-  @Fact
-  public literalUnions(): void {
-    type LiteralUnion = "a" | "b" | "c" | "d";
+  @Theory
+  @InlineData("a", 0)
+  @InlineData("b", 1)
+  @InlineData("c", 2)
+  @InlineData("d", 3)
+  public literalUnions(value: LiteralUnion, expectedIndex: number): void {
     const members = deunify<LiteralUnion>();
-
-    const value: LiteralUnion = "d";
     const { buf } = this.serialize<LiteralUnion>(value);
     Assert.defined(buf);
     Assert.equal(1, len(buf));
 
     const index = readu8(buf, 0);
-    Assert.equal(3, index);
+    Assert.equal(expectedIndex, index);
     Assert.equal(value, members[index]);
   }
 
-  @Fact
-  public enums(): void {
-    const value = Enum.UserInputState.Begin;
+  @Theory
+  @InlineData(Enum.UserInputState.Begin)
+  @InlineData(Enum.UserInputState.Change)
+  @InlineData(Enum.UserInputState.End)
+  @InlineData(Enum.UserInputState.Cancel)
+  @InlineData(Enum.UserInputState.None)
+  public enums(value: Enum.UserInputState): void {
     const { buf } = this.serialize<Enum.UserInputState>(value);
     Assert.defined(buf);
     Assert.equal(1, len(buf));
 
     const index = readu8(buf, 0);
-    Assert.equal(0, index);
+    Assert.equal(value.Value, index);
   }
 
   @Fact

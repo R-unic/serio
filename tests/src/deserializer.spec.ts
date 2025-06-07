@@ -1,8 +1,8 @@
 import type { Modding } from "@flamework/core";
-import { Assert, Fact } from "@rbxts/runit";
+import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 
-import { assertFuzzyEqual, getSerializer, type SerializeMetadata } from "./utility";
-import type { u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64 } from "../src/index";
+import { assertFuzzyEqual, getSerializer, type LiteralUnion, type SerializeMetadata } from "./utility";
+import type { u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64, String } from "../src/index";
 
 const { len, readu8 } = buffer;
 
@@ -86,9 +86,52 @@ class DeserializationTest {
 
   @Fact
   public f64(): void {
-    const n = 69.6942069;
+    const n = 69.42069420;
     const result = this.deserialize<f64>(n);
     Assert.equal(n, result);
+  }
+
+  @Fact
+  public string(): void {
+    const s = "abc123";
+    const result = this.deserialize<string>(s);
+    Assert.equal(s, result);
+  }
+
+  @Fact
+  public stringCustom(): void {
+    const s = "abc123";
+    const result = this.deserialize<String<u8>>(s);
+    Assert.equal(s, result);
+  }
+
+  @Theory
+  @InlineData(true)
+  @InlineData(false)
+  public boolean(value: boolean): void {
+    const result = this.deserialize<boolean>(value);
+    Assert.equal(value, result);
+  }
+
+  @Theory
+  @InlineData("a")
+  @InlineData("b")
+  @InlineData("c")
+  @InlineData("d")
+  public literalUnions(value: LiteralUnion): void {
+    const result = this.deserialize<LiteralUnion>(value);
+    Assert.equal(value, result);
+  }
+
+  @Theory
+  @InlineData(Enum.UserInputState.Begin)
+  @InlineData(Enum.UserInputState.Change)
+  @InlineData(Enum.UserInputState.End)
+  @InlineData(Enum.UserInputState.Cancel)
+  @InlineData(Enum.UserInputState.None)
+  public enums(value: Enum.UserInputState): void {
+    const result = this.deserialize<Enum.UserInputState>(value);
+    Assert.equal(value, result);
   }
 
   /** @metadata macro */

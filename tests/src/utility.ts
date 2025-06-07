@@ -4,6 +4,8 @@ import { Assert } from "@rbxts/runit";
 import type { Serializer, SerializerMetadata } from "../src/index";
 import createSerializer from "../src/index";
 
+export type LiteralUnion = "a" | "b" | "c" | "d";
+
 export interface SerializeMetadata<T> {
   readonly text: Modding.Generic<T, "text">;
   readonly serializerMeta: Modding.Many<SerializerMetadata<T>>;
