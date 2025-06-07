@@ -1,10 +1,16 @@
 import type { Modding } from "@flamework/core";
 import { Assert } from "@rbxts/runit";
 
-import type { Serializer, SerializerMetadata } from "../src/index";
+import type { Serializer, SerializerMetadata, u8, i32 } from "../src/index";
 import createSerializer from "../src/index";
 
-export type LiteralUnion = "a" | "b" | "c" | "d";
+export type TestLiteralUnion = "a" | "b" | "c" | "d";
+export interface TestObject {
+  readonly a: u8;
+  readonly b: boolean;
+  readonly c: "a" | "b" | "c";
+  readonly d: i32;
+}
 
 export interface SerializeMetadata<T> {
   readonly text: Modding.Generic<T, "text">;

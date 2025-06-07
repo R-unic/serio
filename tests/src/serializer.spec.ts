@@ -8,7 +8,7 @@ import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
 import { COMMON_VECTORS } from "../../src/constants";
 import { fuzzyEq } from "../../src/utility";
-import { assertFuzzyEqual, getSerializer, type LiteralUnion, type SerializeMetadata } from "./utility";
+import { assertFuzzyEqual, getSerializer, type TestLiteralUnion, type TestObject, type SerializeMetadata } from "./utility";
 import type {
   SerializedData,
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
@@ -198,9 +198,9 @@ class SerializationTest {
   @InlineData("b", 1)
   @InlineData("c", 2)
   @InlineData("d", 3)
-  public literalUnions(value: LiteralUnion, expectedIndex: number): void {
-    const members = deunify<LiteralUnion>();
-    const { buf } = this.serialize<LiteralUnion>(value);
+  public literalUnions(value: TestLiteralUnion, expectedIndex: number): void {
+    const members = deunify<TestLiteralUnion>();
+    const { buf } = this.serialize<TestLiteralUnion>(value);
     Assert.defined(buf);
     Assert.equal(1, len(buf));
 
@@ -226,15 +226,8 @@ class SerializationTest {
 
   @Fact
   public object(): void {
-    interface Schema {
-      readonly a: u8;
-      readonly b: boolean;
-      readonly c: "a" | "b" | "c";
-      readonly d: i32;
-    }
-
-    const value: Schema = { a: 69, b: false, c: "b", d: -42069 };
-    const { buf } = this.serialize<Schema>(value);
+    const value: TestObject = { a: 69, b: false, c: "b", d: -42069 };
+    const { buf } = this.serialize<TestObject>(value);
     Assert.defined(buf);
     Assert.equal(7, len(buf));
 
