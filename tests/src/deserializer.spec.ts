@@ -1,8 +1,8 @@
 import type { Modding } from "@flamework/core";
 import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 
-import { assertFuzzyEqual, getSerializer, type TestLiteralUnion, type TestObject, type SerializeMetadata } from "./utility";
-import type { u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64, String } from "../src/index";
+import { assertFuzzyEqual, assertIterableEqual, getSerializer, type TestLiteralUnion, type TestObject, type SerializeMetadata } from "./utility";
+import type { u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64, String, List, HashSet, HashMap } from "../src/index";
 
 const { len, readu8 } = buffer;
 
@@ -142,6 +142,48 @@ class DeserializationTest {
     Assert.equal(value.b, result.b);
     Assert.equal(value.c, result.c);
     Assert.equal(value.d, result.d);
+  }
+
+  @Fact
+  public array(): void {
+    const value: u8[] = [1, 2, 3, 4];
+    const result = this.deserialize(value);
+    assertIterableEqual(value, result);
+  }
+
+  @Fact
+  public arrayCustom(): void {
+    const value: number[] = [1, 2, 3, 4];
+    const result = this.deserialize<List<u8, u8>>(value);
+    assertIterableEqual(value, result);
+  }
+
+  @Fact
+  public set(): void {
+    const value = new Set<TestLiteralUnion>(["a", "b", "c", "d"]);
+    const result = this.deserialize(value);
+    assertIterableEqual(value as never, result as never);
+  }
+
+  @Fact
+  public setCustom(): void {
+    const value = new Set<TestLiteralUnion>(["a", "b", "c", "d"]);
+    const result = this.deserialize<HashSet<TestLiteralUnion, u8>>(value);
+    assertIterableEqual(value as never, result as never);
+  }
+
+  @Fact
+  public map(): void {
+    const value = new Map<TestLiteralUnion, u8>([["a", 0], ["b", 1], ["c", 2], ["d", 3]]);
+    const result = this.deserialize(value);
+    assertIterableEqual(value as never, result as never);
+  }
+
+  @Fact
+  public mapCustom(): void {
+    const value = new Map<TestLiteralUnion, number>([["a", 0], ["b", 1], ["c", 2], ["d", 3]]);
+    const result = this.deserialize<HashMap<TestLiteralUnion, u8, u8>>(value);
+    assertIterableEqual(value as never, result as never);
   }
 
   /** @metadata macro */

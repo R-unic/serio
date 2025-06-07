@@ -31,6 +31,18 @@ export function getSerializer<T>(meta?: SerializeMetadata<T>): Serializer<T> | u
   return serializer;
 }
 
+/** shallow */
+export function assertIterableEqual(expected: defined[], actual: defined[]): void {
+  Assert.equal(expected.size(), actual.size());
+
+  // mega hack
+  for (const [key, element] of pairs(expected as unknown as ReadonlyMap<string | number, unknown>)) {
+    const resultElement = (actual as unknown as ReadonlyMap<string | number, unknown>).get(key);
+    Assert.defined(resultElement);
+    Assert.equal(element, resultElement);
+  }
+}
+
 export function assertFuzzyEqual(a: number, b: number, epsilon = 1e-6): void {
   Assert.true(math.abs(a - b) <= epsilon);
 }
