@@ -1,10 +1,11 @@
 import type { Modding } from "@flamework/core";
 import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 
-import { assertFuzzyEqual, assertIterableEqual, getSerializer, type TestLiteralUnion, type TestObject, type SerializeMetadata } from "./utility";
-import type { u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64, String, List, HashSet, HashMap } from "../src/index";
-
-const { len, readu8 } = buffer;
+import { assertFuzzyEqual, assertVectorEqual, assertIterableEqual, getSerializer, type TestLiteralUnion, type TestObject, type SerializeMetadata } from "./utility";
+import type {
+  u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
+  String, List, HashSet, HashMap, Vector
+} from "../src/index";
 
 class DeserializationTest {
   @Fact
@@ -184,6 +185,20 @@ class DeserializationTest {
     const value = new Map<TestLiteralUnion, number>([["a", 0], ["b", 1], ["c", 2], ["d", 3]]);
     const result = this.deserialize<HashMap<TestLiteralUnion, u8, u8>>(value);
     assertIterableEqual(value as never, result as never);
+  }
+
+  @Fact
+  public vector(): void {
+    const value = new Vector3(1, 2, 3);
+    const result = this.deserialize<Vector3>(value);
+    assertVectorEqual(value, result);
+  }
+
+  @Fact
+  public vectorCustom(): void {
+    const value = new Vector3(1, 2, 3);
+    const result = this.deserialize<Vector<u8, u8>>(value);
+    assertVectorEqual(value, result);
   }
 
   /** @metadata macro */

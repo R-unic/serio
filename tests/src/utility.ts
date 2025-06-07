@@ -43,6 +43,12 @@ export function assertIterableEqual(expected: defined[], actual: defined[]): voi
   }
 }
 
+export function assertVectorEqual(expected: Vector3, actual: Vector3): void {
+  Assert.equal(expected.X, actual.X);
+  Assert.equal(expected.Y, actual.Y);
+  Assert.equal(expected.Z, actual.Z);
+}
+
 export function assertFuzzyEqual(a: number, b: number, epsilon = 1e-6): void {
   Assert.true(math.abs(a - b) <= epsilon);
 }
