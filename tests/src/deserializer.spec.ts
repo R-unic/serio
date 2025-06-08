@@ -251,14 +251,14 @@ class DeserializationTest {
 
   @Fact
   public cframe(): void {
-    const value = new CFrame(1, 2, 3).mul(CFrame.Angles(math.rad(45), 0, 0));
+    const value = new CFrame(1, 2, 3).mul(angles(rad(45), 0, 0));
     const result = this.deserialize<CFrame>(value);
     assertCFrameEqual(value, result);
   }
 
   @Fact
   public cframeCustom(): void {
-    const value = new CFrame(1, 2, 3).mul(CFrame.Angles(math.rad(45), 0, 0));
+    const value = new CFrame(1, 2, 3).mul(angles(rad(45), 0, 0));
     const result = this.deserialize<Transform<u8>>(value);
     assertCFrameEqual(value, result);
   }

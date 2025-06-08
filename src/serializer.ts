@@ -8,7 +8,7 @@ import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS } from "./cons
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
 
-const { min, max, ceil, log, map, pi: PI } = math;
+const { min, max, ceil, map, pi: PI } = math;
 const {
   copy, create: createBuffer, len: bufferLength,
   writei8, writei16, writei32, writeu8, writeu16, writeu32, writef32, writef64, writestring
@@ -129,6 +129,7 @@ export function getSerializeFunction<T>(
         const str = value as string;
         const length = str.size();
         const lengthSize = sizeOfNumberType(lengthType);
+        assertNumberRange(length, lengthSize, false, "string length");
         serialize(length, lengthType);
         allocate(length);
         writestring(buf, currentOffset + lengthSize, str);
@@ -160,6 +161,7 @@ export function getSerializeFunction<T>(
       case "enum": {
         const enumIndex = sortedEnums[meta[1]!].indexOf(value as never);
 
+        assertNumberRange(enumIndex, 1, false, "enum index");
         allocate(1);
         writeu8(buf, currentOffset, enumIndex);
         break;
@@ -167,6 +169,7 @@ export function getSerializeFunction<T>(
       case "numbersequence": {
         const keypoints = (value as NumberSequence).Keypoints;
         const keypointCount = keypoints.size();
+        assertNumberRange(keypointCount, 1, false, "number sequence keypoints length");
         allocate(1 + keypointCount * 6);
         writeu8(buf, currentOffset, keypointCount);
 
@@ -183,6 +186,7 @@ export function getSerializeFunction<T>(
       case "colorsequence": {
         const keypoints = (value as ColorSequence).Keypoints;
         const keypointCount = keypoints.size();
+        assertNumberRange(keypointCount, 1, false, "color sequence keypoints length");
         allocate(1 + keypointCount * 5);
         writeu8(buf, currentOffset, keypointCount);
 
@@ -295,26 +299,7 @@ export function getSerializeFunction<T>(
           }
 
           if (!optimizedRotation) {
-            const [axis, angle] = toAxisAngle(cframe);
-            const zSign = sign(axis.Z);
-            const xAxis = axis.X;
-            const maxY = (1 - xAxis ** 2) ** 0.5;
-            let mappedX = map(xAxis, -1, 1, 0, LIMIT_16_BITS);
-            let mappedY = map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign;
-            let mappedAngle = map(angle, 0, PI, 0, LIMIT_16_BITS);
-            if (isNaN(mappedX))
-              mappedX = 0;
-            if (isNaN(mappedY))
-              mappedY = 0;
-            if (isNaN(mappedAngle))
-              mappedAngle = 0;
-
-            assertNumberRange(mappedX, 2, false);
-            assertNumberRange(mappedY, 2, true);
-            assertNumberRange(mappedAngle, 2, false);
-            writeu16(buf, newOffset, mappedX);
-            writei16(buf, newOffset + 2, mappedY);
-            writeu16(buf, newOffset + 4, mappedAngle);
+            writeCFrameAngles(cframe, newOffset);
             newOffset += 6;
           }
 
@@ -324,18 +309,8 @@ export function getSerializeFunction<T>(
           break;
         }
 
-        const [axis, angle] = toAxisAngle(cframe);
-        const zSign = sign(axis.Z);
-        const xAxis = axis.X;
-        const maxY = (1 - xAxis ** 2) ** 0.5;
-        const mappedX = map(xAxis, -1, 1, 0, LIMIT_16_BITS);
-        const mappedY = map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign;
-        const mappedAngle = map(angle, 0, PI, 0, LIMIT_16_BITS);
-
         allocate(6); // minimum
-        writeu16(buf, currentOffset, mappedX);
-        writei16(buf, currentOffset + 2, mappedY);
-        writeu16(buf, currentOffset + 4, mappedAngle);
+        writeCFrameAngles(cframe, currentOffset);
         serialize(position, ["vector", xType, yType, zType]);
         break;
       }
@@ -365,9 +340,11 @@ export function getSerializeFunction<T>(
         const [tagIndex, tagMetadata] = tagMap.get(objectTag)!;
 
         if (byteSize === 1) {
+          assertNumberRange(tagIndex, 1, false, "literal union tag index");
           allocate(1);
           writeu8(buf, currentOffset, tagIndex);
         } else if (byteSize === 2) {
+          assertNumberRange(tagIndex, 2, false, "literal union tag index");
           allocate(2);
           writeu16(buf, currentOffset, tagIndex);
         } else if (byteSize === -1)
@@ -381,11 +358,13 @@ export function getSerializeFunction<T>(
         if (byteSize === 1) {
           const index = literals.indexOf(value as defined);
 
+          assertNumberRange(index, 1, false, "literal index");
           allocate(1);
           writeu8(buf, currentOffset, index);
         } else if (byteSize === 2) {
           const index = literals.indexOf(value as defined);
 
+          assertNumberRange(index, 2, false, "literal index");
           allocate(2);
           writeu16(buf, currentOffset, index);
         } else if (byteSize === -1)
@@ -399,8 +378,10 @@ export function getSerializeFunction<T>(
         const size = tuple.size();
 
         if (restMetadata !== undefined) {
+          const restSize = size - elements.size();
+          assertNumberRange(restSize, 2, false, "tuple rest length");
           allocate(2);
-          writeu16(buf, currentOffset, size - elements.size());
+          writeu16(buf, currentOffset, restSize);
         }
 
         for (const i of $range(1, size)) {
@@ -448,6 +429,29 @@ export function getSerializeFunction<T>(
       default:
         throw `[@rbxts/serio]: Cannot serialize unknown schema type '${meta[0]}'`;
     }
+  }
+
+  function writeCFrameAngles(cframe: CFrame, offset: number): void {
+    const [axis, angle] = toAxisAngle(cframe);
+    const zSign = sign(axis.Z);
+    const xAxis = axis.X;
+    const maxY = (1 - xAxis ** 2) ** 0.5;
+    let mappedX = map(xAxis, -1, 1, 0, LIMIT_16_BITS);
+    let mappedY = map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign;
+    let mappedAngle = map(angle, 0, PI, 0, LIMIT_16_BITS);
+    if (isNaN(mappedX))
+      mappedX = 0;
+    if (isNaN(mappedY))
+      mappedY = 0;
+    if (isNaN(mappedAngle))
+      mappedAngle = 0;
+
+    assertNumberRange(mappedX, 2, false);
+    assertNumberRange(mappedY, 2, true);
+    assertNumberRange(mappedAngle, 2, false);
+    writeu16(buf, offset, mappedX);
+    writei16(buf, offset + 2, mappedY);
+    writeu16(buf, offset + 4, mappedAngle);
   }
 
   function validate(value: unknown, [kind]: SerializerSchema): void {

@@ -6,7 +6,7 @@ const { magnitude } = vector;
 
 export * from "./fastcalls";
 
-export function assertNumberRange(n: number, sizeInBytes: number, signed: boolean): void {
+export function assertNumberRange(n: number, sizeInBytes: number, signed: boolean, note?: string): void {
   const sizeInBits = 8 * sizeInBytes;
   const signedOffset = signed ? 1 : 0;
   const integerBits = sizeInBits - signedOffset;
@@ -14,7 +14,7 @@ export function assertNumberRange(n: number, sizeInBytes: number, signed: boolea
   const minimum = signed ? -maximum - 1 : 0;
 
   if (n >= minimum && n <= maximum) return;
-  throw `[@rbxts/serio]: Attempt to serialize value out of bit range
+  throw `[@rbxts/serio]: Attempt to serialize value out of bit range${note !== undefined ? ` (${note})` : ""}
     Value: ${n}
     Size: ${sizeInBytes}
     Signed: ${signed}`;
