@@ -8,7 +8,7 @@ import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS } from "./cons
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
 
-const { min, max, ceil, map, pi: PI } = math;
+const { min, max, clamp, ceil, map, pi: PI } = math;
 const {
   copy, create: createBuffer, len: bufferLength,
   writei8, writei16, writei32, writeu8, writeu16, writeu32, writef32, writef64, writestring
@@ -436,9 +436,9 @@ export function getSerializeFunction<T>(
     const zSign = sign(axis.Z);
     const xAxis = axis.X;
     const maxY = (1 - xAxis ** 2) ** 0.5;
-    let mappedX = map(xAxis, -1, 1, 0, LIMIT_16_BITS);
-    let mappedY = map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign;
-    let mappedAngle = map(angle, 0, PI, 0, LIMIT_16_BITS);
+    let mappedX = clamp(map(xAxis, -1, 1, 0, LIMIT_16_BITS), 0, LIMIT_16_BITS);
+    let mappedY = clamp(map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign, -LIMIT_15_BITS, LIMIT_15_BITS - 1);
+    let mappedAngle = clamp(map(angle, 0, PI, 0, LIMIT_16_BITS), 0, LIMIT_16_BITS);;
     if (isNaN(mappedX))
       mappedX = 0;
     if (isNaN(mappedY))
@@ -467,7 +467,7 @@ export function getSerializeFunction<T>(
     for (const i of $range(0, byteCount - 1)) {
       let currentByte = 0;
       const remainingBits = bitSize - bitOffset;
-      const bitsThisByte = min(7, max(0, remainingBits));
+      const bitsThisByte = clamp(remainingBits, 0, 7);
       for (const bit of $range(variable ? 1 : 0, bitsThisByte)) {
         currentByte += (bits[bitOffset] ? 1 : 0) << bit;
         bitOffset++;
