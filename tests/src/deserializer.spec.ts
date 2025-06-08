@@ -8,8 +8,12 @@ import {
 import type {
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap, Vector,
-  Transform
+  Transform,
+  Packed
 } from "../src/index";
+
+const angles = CFrame.Angles;
+const { rad } = math;
 
 class DeserializationTest {
   @Fact
@@ -234,6 +238,17 @@ class DeserializationTest {
     assertVectorEqual(value, result);
   }
 
+  @Theory
+  @InlineData(vector.zero)
+  @InlineData(vector.one)
+  @InlineData(vector.create(-1, 1, -1))
+  @InlineData(vector.create(1, 0, 1))
+  @InlineData(vector.create(0, 69, 0))
+  public packedVectors(vec: vector): void {
+    const result = this.deserialize<Packed<{ vec: Vector<u8> }>>({ vec: vec as never });
+    assertVectorEqual(vec as never, result.vec);
+  }
+
   @Fact
   public cframe(): void {
     const value = new CFrame(1, 2, 3).mul(CFrame.Angles(math.rad(45), 0, 0));
@@ -246,6 +261,22 @@ class DeserializationTest {
     const value = new CFrame(1, 2, 3).mul(CFrame.Angles(math.rad(45), 0, 0));
     const result = this.deserialize<Transform<u8>>(value);
     assertCFrameEqual(value, result);
+  }
+
+  @Theory
+  @InlineData(Vector3.zero, vector.zero)
+  @InlineData(Vector3.one, vector.zero)
+  @InlineData(Vector3.zero, vector.create(45, 0, 0))
+  @InlineData(Vector3.one, vector.create(45, 0, 0))
+  @InlineData(new Vector3(0, 69, 0), vector.zero)
+  @InlineData(new Vector3(0, 69, 0), vector.create(90, 0, 0))
+  @InlineData(new Vector3(0, 69, 0), vector.create(45, 0, 0))
+  public packedCFrames(position: Vector3, rotation: vector): void {
+    const cf = new CFrame(position)
+      .mul(angles(rad(rotation.x), rad(rotation.y), rad(rotation.z)));
+
+    const result = this.deserialize<Packed<{ cf: Transform<u8> }>>({ cf });
+    assertCFrameEqual(cf, result.cf);
   }
 
   /** @metadata macro */
