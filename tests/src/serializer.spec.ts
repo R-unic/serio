@@ -6,7 +6,7 @@ import { u24 as u24Utility } from "../../src/utility/u24";
 import { i24 as i24Utility } from "../../src/utility/i24";
 import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
-import { COMMON_VECTORS } from "../../src/constants";
+import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "../../src/constants";
 import { fuzzyEq } from "../../src/utility";
 import { assertFuzzyEqual, getSerializer, type TestLiteralUnion, type TestObject, type SerializeMetadata } from "./utility";
 import type {
@@ -15,6 +15,8 @@ import type {
   String, List, HashSet, HashMap, Vector, Transform, Packed
 } from "../src/index";
 
+const angles = CFrame.Angles;
+const { rad } = math;
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
 
 class SerializationTest {
@@ -546,10 +548,10 @@ class SerializationTest {
   @InlineData(Vector3.zero, 0x20)
   @InlineData(Vector3.one, 0x60)
   public packedCFramePositionSpecialCases(position: Vector3, bits: number): void {
-    const value = new CFrame(position);
+    const value = new CFrame(position).mul(CFrame.Angles(rad(45), 0, 0));
     const { buf } = this.serialize<Packed<Transform<u8>>>(value);
     Assert.defined(buf);
-    Assert.equal(2, len(buf));
+    Assert.equal(8, len(buf));
 
     const isOptimized = (readu8(buf, 0) & 1) === 1;
     Assert.true(isOptimized);
@@ -557,6 +559,53 @@ class SerializationTest {
     const packed = readu8(buf, 1);
     const optimizedPosition = packed & 0x60;
     Assert.equal(bits, optimizedPosition);
+
+    const optimizedRotation = packed & 0x1F;
+    Assert.false(optimizedRotation !== 0x1F);
+  }
+
+  @Theory
+  @InlineData(vector.zero)
+  @InlineData(vector.create(0, 180, 0))
+  @InlineData(vector.create(90, 0, 0))
+  @InlineData(vector.create(-90, -180, 0))
+  @InlineData(vector.create(0, 180, 180))
+  @InlineData(vector.create(0, 0, 180))
+  @InlineData(vector.create(-90, 0, 0))
+  @InlineData(vector.create(90, 180, 0))
+  @InlineData(vector.create(0, 180, 90))
+  @InlineData(vector.create(0, 0, -90))
+  @InlineData(vector.create(0, 90, 90))
+  @InlineData(vector.create(0, -90, -90))
+  @InlineData(vector.create(0, 0, 90))
+  @InlineData(vector.create(0, -180, -90))
+  @InlineData(vector.create(0, -90, 90))
+  @InlineData(vector.create(0, 90, -90))
+  @InlineData(vector.create(-90, -90, 0))
+  @InlineData(vector.create(90, 90, 0))
+  @InlineData(vector.create(0, -90, 0))
+  @InlineData(vector.create(0, 90, 0))
+  @InlineData(vector.create(90, -90, 0))
+  @InlineData(vector.create(-90, 90, 0))
+  @InlineData(vector.create(0, 90, 180))
+  @InlineData(vector.create(0, -90, -180))
+  public packedCFrameRotationSpecialCases({ x, y, z }: vector): void {
+    const rotation = angles(rad(x), rad(y), rad(z));
+    const expectedIndex = AXIS_ALIGNED_ORIENTATIONS.findIndex(v => v === rotation);
+    Assert.notEqual(-1, expectedIndex);
+
+    const value = new CFrame(0, 69, 0).mul(rotation);
+    const { buf } = this.serialize<Packed<Transform<u8>>>(value);
+    Assert.defined(buf);
+    Assert.equal(5, len(buf));
+
+    const isOptimized = (readu8(buf, 0) & 1) === 1;
+    Assert.true(isOptimized);
+
+    const packed = readu8(buf, 1);
+    const optimizedPosition = packed & 0x60;
+    Assert.notEqual(0x20, optimizedPosition);
+    Assert.notEqual(0x60, optimizedPosition);
 
     const optimizedRotation = packed & 0x1F;
     Assert.true(optimizedRotation !== 0x1F);

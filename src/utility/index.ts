@@ -1,3 +1,4 @@
+import { IS_LUNE } from "../constants";
 import type { NumberType, Primitive } from "../types";
 
 const { sort } = table;
@@ -6,7 +7,18 @@ const { magnitude } = vector;
 export * from "./fastcalls";
 
 export function fuzzyEq(a: Vector3, b: Vector3, epsilon = 1e-6): boolean {
-  return magnitude(a.sub(b) as never) <= epsilon;
+  if (IS_LUNE) {
+    if (typeOf(a) === "vector")
+      a = new Vector3(a.X, a.Y, a.Z);
+    if (typeOf(b) === "vector")
+      b = new Vector3(b.X, b.Y, b.Z);
+  }
+
+  let difference = a.sub(b) as unknown as vector;
+  if (IS_LUNE && typeIs(difference, "Vector3"))
+    difference = vector.create(difference.X, difference.Y, difference.Z);
+
+  return magnitude(difference) <= epsilon;
 }
 
 /**
