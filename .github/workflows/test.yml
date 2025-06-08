@@ -17,11 +17,14 @@ jobs:
       - name: Install Rokit
         uses: CompeyDev/setup-rokit@v0.1.2
 
-      - name: Run Tests
+      - name: Install Dependencies
         run: |
           npm i
-          cd tests && npm i && npm i @rbxts/runit@^1.3.9
+          cd tests && npm i
           cd ..
+
+      - name: Run Tests
+        run: |
           npm test | tee test-output.txt
           output=$(<test-output.txt)
           cleaned_output=$(echo "$output" | sed 's/\x1b\[[0-9;]*m//g')
