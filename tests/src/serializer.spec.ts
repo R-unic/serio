@@ -7,7 +7,7 @@ import { i24 as i24Utility } from "../../src/utility/i24";
 import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "../../src/constants";
-import { fuzzyEq } from "../../src/utility";
+import { fuzzyEq, sizeOfNumberType } from "../../src/utility";
 import {
   assertFuzzyEqual, getSerializer,
   type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans
@@ -17,12 +17,32 @@ import type {
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap, Vector, Transform, Packed
 } from "../src/index";
+import type { NumberType } from "../src/types";
 
 const angles = CFrame.Angles;
 const { rad } = math;
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
 
 class SerializationTest {
+  @Theory
+  @InlineData(2 ** 8, "u8")
+  @InlineData(-1, "u8")
+  @InlineData(-200, "i8")
+  @InlineData(2 ** 16, "u16")
+  @InlineData(-1, "u16")
+  @InlineData(-42069, "i16")
+  @InlineData(2 ** 32, "u32")
+  @InlineData(-1, "u32")
+  @InlineData(-(2 ** 32), "i32")
+  @InlineData(2 ** 16, "f16")
+  @InlineData(2 ** 24, "f24")
+  public throwsWhenOutOfRange(n: number, kind: NumberType): void {
+    Assert.throws(() => this.serialize(n, {
+      text: kind,
+      serializerMeta: [kind]
+    } as never));
+  }
+
   @Fact
   public u8(): void {
     const n = 69;

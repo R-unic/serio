@@ -1,5 +1,5 @@
 
-import { sizeOfNumberType, sign, CF__index, fuzzyEq } from "./utility";
+import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange } from "./utility";
 import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
 import { u24 } from "./utility/u24";
@@ -40,6 +40,7 @@ export function getSerializeFunction<T>(
 
   function serialize(value: unknown, meta: SerializerSchema, serializeOffset = offset): void {
     const currentOffset = serializeOffset;
+    validate(value, meta);
 
     switch (meta[0]) {
       case "u8": {
@@ -437,6 +438,14 @@ export function getSerializeFunction<T>(
 
       default:
         throw `[@rbxts/serio]: Cannot serialize unknown schema type '${meta[0]}'`;
+    }
+  }
+
+  function validate(value: unknown, [kind]: SerializerSchema): void {
+    if (isNumberType(kind)) {
+      const size = sizeOfNumberType(kind);
+      const isSigned = kind.sub(1, 1) !== "u";
+      assertNumberRange(value as number, size, isSigned);
     }
   }
 

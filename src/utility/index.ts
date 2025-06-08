@@ -1,10 +1,24 @@
 import { IS_LUNE } from "../constants";
-import type { NumberType, Primitive } from "../types";
+import type { NumberType, Primitive, PrimitiveDataType, SerializerSchema } from "../types";
 
 const { sort } = table;
 const { magnitude } = vector;
 
 export * from "./fastcalls";
+
+export function assertNumberRange(n: number, sizeInBytes: number, signed: boolean): void {
+  const sizeInBits = 8 * sizeInBytes;
+  const signedOffset = signed ? 1 : 0;
+  const integerBits = sizeInBits - signedOffset;
+  const maximum = 2 ** integerBits - 1;
+  const minimum = signed ? -maximum - 1 : 0;
+
+  if (n >= minimum && n <= maximum) return;
+  throw `[@rbxts/serio]: Attempt to serialize value out of bit range
+    Value: ${n}
+    Size: ${sizeInBytes}
+    Signed: ${signed}`;
+}
 
 export function fuzzyEq(a: Vector3, b: Vector3, epsilon = 1e-6): boolean {
   if (IS_LUNE) {
@@ -42,8 +56,15 @@ const numberTypeSizes: Record<NumberType, number> = {
   f64: 8,
 };
 
-export function sizeOfNumberType([kind]: Primitive<NumberType>): number {
+export function sizeOfNumberType(kind: NumberType): number;
+export function sizeOfNumberType(primitive: Primitive<NumberType>): number;
+export function sizeOfNumberType(typeInfo: NumberType | Primitive<NumberType>): number {
+  const kind = typeIs(typeInfo, "string") ? typeInfo : typeInfo[0];
   return numberTypeSizes[kind];
+}
+
+export function isNumberType(typeName: string): typeName is NumberType {
+  return numberTypeSizes[typeName as never] !== undefined;
 }
 
 export function sign(n: number): -1 | 1 {
