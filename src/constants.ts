@@ -5,6 +5,8 @@ const { zero: zeroVector, one: oneVector, create: createVector } = vector;
 const { fromScale } = UDim2;
 const { Angles: angles } = CFrame;
 
+export const IS_LUNE = _VERSION.sub(1, 4) === "Lune";
+
 export const AXIS_ALIGNED_ORIENTATIONS = [
   zeroVector,
   createVector(0, 180, 0),

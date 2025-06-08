@@ -1,10 +1,14 @@
 import type { Modding } from "@flamework/core";
 import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 
-import { assertFuzzyEqual, assertVectorEqual, assertIterableEqual, getSerializer, type TestLiteralUnion, type TestObject, type SerializeMetadata } from "./utility";
+import {
+  assertFuzzyEqual, assertVectorEqual, assertCFrameEqual, assertIterableEqual, getSerializer,
+  type TestLiteralUnion, type TestObject, type SerializeMetadata
+} from "./utility";
 import type {
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
-  String, List, HashSet, HashMap, Vector
+  String, List, HashSet, HashMap, Vector,
+  Transform
 } from "../src/index";
 
 class DeserializationTest {
@@ -197,8 +201,22 @@ class DeserializationTest {
   @Fact
   public vectorCustom(): void {
     const value = new Vector3(1, 2, 3);
-    const result = this.deserialize<Vector<u8, u8>>(value);
+    const result = this.deserialize<Vector<u8>>(value);
     assertVectorEqual(value, result);
+  }
+
+  @Fact
+  public cframe(): void {
+    const value = new CFrame(1, 2, 3).mul(CFrame.Angles(math.rad(45), 0, 0));
+    const result = this.deserialize<CFrame>(value);
+    assertCFrameEqual(value, result);
+  }
+
+  @Fact
+  public cframeCustom(): void {
+    const value = new CFrame(1, 2, 3).mul(CFrame.Angles(math.rad(45), 0, 0));
+    const result = this.deserialize<Transform<u8>>(value);
+    assertCFrameEqual(value, result);
   }
 
   /** @metadata macro */

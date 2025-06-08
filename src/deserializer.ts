@@ -1,9 +1,9 @@
-import { sizeOfNumberType, sign } from "./utility";
+import { sizeOfNumberType, sign, CF__add } from "./utility";
 import { f24 } from "./utility/f24";
 import { f16 } from "./utility/f16";
 import { u24 } from "./utility/u24";
 import { i24 } from "./utility/i24";
-import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS } from "./constants";
+import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS, IS_LUNE } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { NumberType, Primitive, SerializedData, SerializerSchema } from "./types";
 
@@ -13,8 +13,12 @@ const {
   create: createBuffer,
   readi8, readi16, readi32, readu8, readu16, readu32, readf32, readf64, readstring
 } = buffer;
-const { fromAxisAngle } = CFrame;
 const { fromRGB } = Color3;
+
+const orig = CFrame.fromAxisAngle;
+const fromAxisAngle = IS_LUNE
+  ? (unit: Vector3, rotation: number) => orig(new Vector3(unit.X, unit.Y, unit.Z), rotation)
+  : orig;
 
 const LIMIT_16_BITS = 2 ** 16 - 1;
 const LIMIT_15_BITS = 2 ** 16 - 1;
@@ -223,7 +227,7 @@ export function getDeserializeFunction<T>(
             else
               position = deserialize(["vector", xType, yType, zType]) as Vector3;
 
-            return rotation.add(position);
+            return CF__add(rotation, position);
           }
         }
 
@@ -362,10 +366,10 @@ export function getDeserializeFunction<T>(
     const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
     const axis = createVector(axisX, axisY, axisZ) as unknown as Vector3;
     const angle = map(mappedAngle, 0, LIMIT_16_BITS, 0, PI);
-    const axisAngle = fromAxisAngle(axis, angle);
+    const rotation = fromAxisAngle(axis, angle);
     const position = deserialize(["vector", xType, yType, zType]) as Vector3;
 
-    return axisAngle.add(position);
+    return CF__add(rotation, position);
   }
 
   function readBits(): void {

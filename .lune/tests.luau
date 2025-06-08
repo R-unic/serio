@@ -69,17 +69,11 @@ roblox.implementProperty("Players", "LocalPlayer", function()
 	return roblox.Instance.new("Player")
 end)
 
--- @rbxts/id uses GenerateGUID
-roblox.implementMethod("HttpService", "GenerateGUID", function()
-	return "test-guid"
-end)
-
 roblox.implementMethod("HttpService", "JSONEncode", function()
 	return nil
 end)
 
 local robloxRequire
-
 local function runRobloxScript(script: Script | LocalScript | ModuleScript)
 	local callableFn = luau.load(luau.compile(script.Source), {
 		debugName = script:GetFullName(),

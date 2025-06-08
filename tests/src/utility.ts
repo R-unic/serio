@@ -43,6 +43,21 @@ export function assertIterableEqual(expected: defined[], actual: defined[]): voi
   }
 }
 
+export function assertCFrameEqual(expected: CFrame, actual: CFrame, angleEpsilon = 1e-4): void {
+  Assert.equal(expected.X, actual.X);
+  Assert.equal(expected.Y, actual.Y);
+  Assert.equal(expected.Z, actual.Z);
+  assertVectorFuzzyEqual(expected.XVector, actual.XVector, angleEpsilon);
+  assertVectorFuzzyEqual(expected.YVector, actual.YVector, angleEpsilon);
+  assertVectorFuzzyEqual(expected.ZVector, actual.ZVector, angleEpsilon);
+}
+
+export function assertVectorFuzzyEqual(expected: Vector3, actual: Vector3, epsilon = 1e-6): void {
+  assertFuzzyEqual(expected.X, actual.X, epsilon);
+  assertFuzzyEqual(expected.Y, actual.Y, epsilon);
+  assertFuzzyEqual(expected.Z, actual.Z, epsilon);
+}
+
 export function assertVectorEqual(expected: Vector3, actual: Vector3): void {
   Assert.equal(expected.X, actual.X);
   Assert.equal(expected.Y, actual.Y);

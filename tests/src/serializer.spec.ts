@@ -12,10 +12,7 @@ import { assertFuzzyEqual, getSerializer, type TestLiteralUnion, type TestObject
 import type {
   SerializedData,
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
-  String, List, HashSet, HashMap,
-  Vector,
-  Packed,
-  Transform
+  String, List, HashSet, HashMap, Vector, Transform, Packed
 } from "../src/index";
 
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
