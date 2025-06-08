@@ -24,9 +24,10 @@ export function getSerializeFunction<T>(
   let bits = table.create<boolean>(minimumPackedBits);
   let currentSize = 2 ** 8;
   let buf = createBuffer(currentSize);
+  let packing = false;
   let offset!: number;
   let blobs!: defined[];
-  let packing = false;
+  let originalValue!: T;
 
   function allocate(size: number): void {
     if ((offset += size) <= currentSize) return;
@@ -355,20 +356,22 @@ export function getSerializeFunction<T>(
       }
       case "literal": {
         const [_, literals, byteSize] = meta;
-        if (byteSize === 1) {
-          const index = literals.indexOf(value as defined);
-
-          assertNumberRange(index, 1, false, "literal index");
-          allocate(1);
-          writeu8(buf, currentOffset, index);
-        } else if (byteSize === 2) {
-          const index = literals.indexOf(value as defined);
-
-          assertNumberRange(index, 2, false, "literal index");
-          allocate(2);
-          writeu16(buf, currentOffset, index);
-        } else if (byteSize === -1)
+        if (byteSize === -1) {
           bits.push(value === literals[0]);
+          break;
+        }
+
+        const index = literals.indexOf(value as defined);
+        if (index === -1)
+          throw `[@rbxts/serio]: Failed to serialize unknown literal value '${value}'
+          Stemmed from: ${originalValue}`;
+
+        assertNumberRange(index, byteSize, false, "literal index");
+        allocate(byteSize);
+        if (byteSize === 1)
+          writeu8(buf, currentOffset, index);
+        else if (byteSize === 2)
+          writeu16(buf, currentOffset, index);
 
         break;
       }
@@ -495,6 +498,7 @@ export function getSerializeFunction<T>(
     offset = 0;
     blobs = [];
     bits = [];
+    originalValue = value;
     serialize(value, schema);
 
     if (!containsPacking) {
