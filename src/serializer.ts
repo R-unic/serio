@@ -436,12 +436,22 @@ export function getSerializeFunction<T>(
 
   function writeCFrameAngles(cframe: CFrame, offset: number): void {
     const [axis, angle] = toAxisAngle(cframe);
-    const zSign = sign(axis.Z);
-    const xAxis = axis.X;
+    let zAxis = axis.Z;
+    if (isNaN(zAxis))
+      zAxis = 0;
+
+    const zSign = sign(zAxis);
+    let xAxis = axis.X;
+    if (isNaN(xAxis))
+      xAxis = 0;
+    let yAxis = axis.Y;
+    if (isNaN(yAxis))
+      yAxis = 0;
+
     const maxY = (1 - xAxis ** 2) ** 0.5;
     let mappedX = clamp(map(xAxis, -1, 1, 0, LIMIT_16_BITS), 0, LIMIT_16_BITS);
-    let mappedY = clamp(map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign, -LIMIT_15_BITS, LIMIT_15_BITS - 1);
-    let mappedAngle = clamp(map(angle, 0, PI, 0, LIMIT_16_BITS), 0, LIMIT_16_BITS);;
+    let mappedY = clamp(map(yAxis, -maxY, maxY, 0, LIMIT_15_BITS) * zSign, -LIMIT_15_BITS, LIMIT_15_BITS - 1);
+    let mappedAngle = clamp(map(angle, 0, PI, 0, LIMIT_16_BITS), 0, LIMIT_16_BITS);
     if (isNaN(mappedX))
       mappedX = 0;
     if (isNaN(mappedY))

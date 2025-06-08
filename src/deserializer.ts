@@ -404,7 +404,7 @@ export function getDeserializeFunction<T>(
     bitIndex = 0;
 
     if (containsPacking) {
-      bits = table.create<boolean>(bitsLength);
+      bits = [];
       readBits();
     }
 

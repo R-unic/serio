@@ -56,27 +56,36 @@ export function assertIterableEqual(expected: defined[], actual: defined[]): voi
 }
 
 export function assertCFrameEqual(expected: CFrame, actual: CFrame, angleEpsilon = 1e-4): void {
-  Assert.equal(expected.X, actual.X);
-  Assert.equal(expected.Y, actual.Y);
-  Assert.equal(expected.Z, actual.Z);
+  Assert.appendFailedMessage("CFrame X Coordinate", () =>
+    Assert.equal(expected.X, actual.X)
+  );
+  Assert.appendFailedMessage("CFrame Y Coordinate", () =>
+    Assert.equal(expected.Y, actual.Y)
+  );
+  Assert.appendFailedMessage("CFrame Z Coordinate", () =>
+    Assert.equal(expected.Z, actual.Z)
+  );
 
-  assertVectorFuzzyEqual(expected.XVector, actual.XVector, angleEpsilon);
-  assertVectorFuzzyEqual(expected.YVector, actual.YVector, angleEpsilon);
-  assertVectorFuzzyEqual(expected.ZVector, actual.ZVector, angleEpsilon);
+  assertVectorFuzzyEqual(expected.XVector, actual.XVector, angleEpsilon, "CFrame X Vector");
+  assertVectorFuzzyEqual(expected.YVector, actual.YVector, angleEpsilon, "CFrame Y Vector");
+  assertVectorFuzzyEqual(expected.ZVector, actual.ZVector, angleEpsilon, "CFrame Z Vector");
 }
 
-export function assertVectorFuzzyEqual(expected: Vector3, actual: Vector3, epsilon = 1e-6): void {
-  assertFuzzyEqual(expected.X, actual.X, epsilon);
-  assertFuzzyEqual(expected.Y, actual.Y, epsilon);
-  assertFuzzyEqual(expected.Z, actual.Z, epsilon);
+export function assertVectorFuzzyEqual(expected: Vector3, actual: Vector3, epsilon = 1e-6, extraMessage?: string): void {
+  const extra = extraMessage === undefined ? "" : extraMessage + " ";
+  Assert.appendFailedMessage(extra + "X Coordinate", () =>
+    Assert.fuzzyEqual(expected.X, actual.X, epsilon)
+  );
+  Assert.appendFailedMessage(extra + "Y Coordinate", () =>
+    Assert.fuzzyEqual(expected.Y, actual.Y, epsilon)
+  );
+  Assert.appendFailedMessage(extra + "Z Coordinate", () =>
+    Assert.fuzzyEqual(expected.Z, actual.Z, epsilon)
+  );
 }
 
 export function assertVectorEqual(expected: Vector3, actual: Vector3): void {
   Assert.equal(expected.X, actual.X);
   Assert.equal(expected.Y, actual.Y);
   Assert.equal(expected.Z, actual.Z);
-}
-
-export function assertFuzzyEqual(a: number, b: number, epsilon = 1e-6): void {
-  Assert.true(math.abs(a - b) <= epsilon);
 }

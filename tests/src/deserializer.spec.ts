@@ -2,7 +2,7 @@ import type { Modding } from "@flamework/core";
 import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 
 import {
-  assertFuzzyEqual, assertVectorEqual, assertCFrameEqual, assertIterableEqual, getSerializer,
+  assertVectorEqual, assertCFrameEqual, assertIterableEqual, getSerializer,
   type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans
 } from "./utility";
 import type {
@@ -76,21 +76,21 @@ class DeserializationTest {
   public f16(): void {
     const n = 69.42;
     const result = this.deserialize<f16>(n);
-    assertFuzzyEqual(n, result, 5e-2);
+    Assert.fuzzyEqual(n, result, 5e-2);
   }
 
   @Fact
   public f24(): void {
     const n = 69.45;
     const result = this.deserialize<f24>(n);
-    assertFuzzyEqual(n, result, 1e-3);
+    Assert.fuzzyEqual(n, result, 1e-3);
   }
 
   @Fact
   public f32(): void {
     const n = 69.420;
     const result = this.deserialize<f32>(n);
-    assertFuzzyEqual(n, result, 1e-4);
+    Assert.fuzzyEqual(n, result, 1e-4);
   }
 
   @Fact
@@ -256,9 +256,12 @@ class DeserializationTest {
     assertCFrameEqual(value, result);
   }
 
-  @Fact
-  public cframeCustom(): void {
-    const value = new CFrame(1, 2, 3).mul(angles(rad(45), 0, 0));
+  @Theory
+  @InlineData(new CFrame(1, 2, 3).mul(angles(rad(45), 0, 0)))
+  @InlineData(new CFrame(1, 2, 3).mul(angles(rad(45), 0, rad(69))))
+  @InlineData(new CFrame(0, 69, 0))
+  @InlineData(angles(0, rad(69), 0))
+  public cframeCustom(value: CFrame): void {
     const result = this.deserialize<Transform<u8>>(value);
     assertCFrameEqual(value, result);
   }
@@ -271,6 +274,7 @@ class DeserializationTest {
   @InlineData(new Vector3(0, 69, 0), vector.zero)
   @InlineData(new Vector3(0, 69, 0), vector.create(90, 0, 0))
   @InlineData(new Vector3(0, 69, 0), vector.create(45, 0, 0))
+  @InlineData(new Vector3(1, 2, 3), vector.create(45, 0, 69))
   public packedCFrames(position: Vector3, rotation: vector): void {
     const cf = new CFrame(position)
       .mul(angles(rad(rotation.x), rad(rotation.y), rad(rotation.z)));

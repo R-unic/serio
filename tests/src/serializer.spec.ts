@@ -7,9 +7,9 @@ import { i24 as i24Utility } from "../../src/utility/i24";
 import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "../../src/constants";
-import { fuzzyEq, sizeOfNumberType } from "../../src/utility";
+import { fuzzyEq } from "../../src/utility";
 import {
-  assertFuzzyEqual, getSerializer,
+  getSerializer,
   type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans
 } from "./utility";
 import type {
@@ -139,7 +139,7 @@ class SerializationTest {
     Assert.equal(2, len(buf));
 
     const result = f16Utility.read(buf, 0);
-    assertFuzzyEqual(n, result, 5e-2);
+    Assert.fuzzyEqual(n, result, 5e-2);
   }
 
   @Fact
@@ -150,7 +150,7 @@ class SerializationTest {
     Assert.equal(3, len(buf));
 
     const result = f24Utility.read(buf, 0);
-    assertFuzzyEqual(n, result, 1e-3);
+    Assert.fuzzyEqual(n, result, 1e-3);
   }
 
   @Fact
@@ -161,7 +161,7 @@ class SerializationTest {
     Assert.equal(4, len(buf));
 
     const result = readf32(buf, 0);
-    assertFuzzyEqual(n, result, 1e-4);
+    Assert.fuzzyEqual(n, result, 1e-4);
   }
 
   @Fact
