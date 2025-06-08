@@ -452,16 +452,13 @@ export function getSerializeFunction<T>(
     let mappedX = clamp(map(xAxis, -1, 1, 0, LIMIT_16_BITS), 0, LIMIT_16_BITS);
     let mappedY = clamp(map(yAxis, -maxY, maxY, 0, LIMIT_15_BITS) * zSign, -LIMIT_15_BITS, LIMIT_15_BITS - 1);
     let mappedAngle = clamp(map(angle, 0, PI, 0, LIMIT_16_BITS), 0, LIMIT_16_BITS);
-    if (isNaN(mappedX))
-      mappedX = 0;
-    if (isNaN(mappedY))
-      mappedY = 0;
-    if (isNaN(mappedAngle))
-      mappedAngle = 0;
+    if (!isNaN(mappedX))
+      assertNumberRange(mappedX, 2, false);
+    if (!isNaN(mappedY))
+      assertNumberRange(mappedY, 2, true);
+    if (!isNaN(mappedAngle))
+      assertNumberRange(mappedAngle, 2, false);
 
-    assertNumberRange(mappedX, 2, false);
-    assertNumberRange(mappedY, 2, true);
-    assertNumberRange(mappedAngle, 2, false);
     writeu16(buf, offset, mappedX);
     writei16(buf, offset + 2, mappedY);
     writeu16(buf, offset + 4, mappedAngle);

@@ -21,7 +21,7 @@ const fromAxisAngle = IS_LUNE
   : orig;
 
 const LIMIT_16_BITS = 2 ** 16 - 1;
-const LIMIT_15_BITS = 2 ** 16 - 1;
+const LIMIT_15_BITS = 2 ** 15 - 1;
 
 export function getDeserializeFunction<T>(
   { schema, containsPacking, containsUnknownPacking, minimumPackedBits, minimumPackedBytes, sortedEnums }: ProcessedInfo
@@ -34,6 +34,7 @@ export function getDeserializeFunction<T>(
   let blobs: defined[] | undefined;
   let blobIndex = 0;
   let packing = false;
+
 
   function deserialize(meta: SerializerSchema, serializeOffset = offset): unknown {
     const currentOffset = serializeOffset;
@@ -193,31 +194,9 @@ export function getDeserializeFunction<T>(
 
             const optimizedPosition = packed & 0x60;
             const optimizedRotation = packed & 0x1F;
-
-            let rotation: CFrame;
-            if (optimizedRotation !== 0x1F)
-              rotation = AXIS_ALIGNED_ORIENTATIONS[optimizedRotation];
-            else {
-              const mappedX = readu16(buf, currentOffset + 1);
-              let mappedY = readi16(buf, currentOffset + 3);
-              const mappedAngle = readu16(buf, currentOffset + 5);
-              offset += 6;
-
-              const zSign = sign(mappedY);
-              mappedY *= zSign;
-
-              const axisX = map(mappedX, 0, LIMIT_16_BITS, -1, 1);
-              let derivedMaximumSquared = 1 - axisX ** 2;
-              const derivedMaximum = derivedMaximumSquared ** 0.5;
-              const axisY = map(mappedY, 0, LIMIT_15_BITS, -derivedMaximum, derivedMaximum);
-              derivedMaximumSquared -= axisY ** 2;
-
-              const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
-              const axis = createVector(axisX, axisY, axisZ) as unknown as Vector3;
-              const angle = map(mappedAngle, 0, LIMIT_16_BITS, 0, PI);
-
-              rotation = fromAxisAngle(axis, angle);
-            }
+            const rotation = optimizedRotation !== 0x1F
+              ? AXIS_ALIGNED_ORIENTATIONS[optimizedRotation]
+              : readCFrameAngles();
 
             let position: Vector3;
             if (optimizedPosition === 0x20)
@@ -231,7 +210,9 @@ export function getDeserializeFunction<T>(
           }
         }
 
-        return deserializeCFrame(xType, yType, zType);
+        const rotation = readCFrameAngles();
+        const position = deserialize(["vector", xType, yType, zType]) as Vector3;
+        return CF__add(rotation, position);
       }
       case "list": {
         const [_, elementMeta, sizeMeta] = meta;
@@ -347,7 +328,7 @@ export function getDeserializeFunction<T>(
     }
   }
 
-  function deserializeCFrame(xType: Primitive<NumberType>, yType: Primitive<NumberType>, zType: Primitive<NumberType>): CFrame {
+  function readCFrameAngles(): CFrame {
     const currentOffset = offset;
     const mappedX = readu16(buf, currentOffset);
     let mappedY = readi16(buf, currentOffset + 2);
@@ -366,10 +347,7 @@ export function getDeserializeFunction<T>(
     const axisZ = (derivedMaximumSquared ** 0.5) * zSign;
     const axis = createVector(axisX, axisY, axisZ) as unknown as Vector3;
     const angle = map(mappedAngle, 0, LIMIT_16_BITS, 0, PI);
-    const rotation = fromAxisAngle(axis, angle);
-    const position = deserialize(["vector", xType, yType, zType]) as Vector3;
-
-    return CF__add(rotation, position);
+    return fromAxisAngle(axis, angle);
   }
 
   function readBits(): void {

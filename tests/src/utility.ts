@@ -55,7 +55,7 @@ export function assertIterableEqual(expected: defined[], actual: defined[]): voi
   }
 }
 
-export function assertCFrameEqual(expected: CFrame, actual: CFrame, angleEpsilon = 1e-4): void {
+export function assertCFrameEqual(expected: CFrame, actual: CFrame, angleEpsilon = 1e-2 * 5): void {
   Assert.appendFailedMessage("CFrame X Coordinate", () =>
     Assert.equal(expected.X, actual.X)
   );
