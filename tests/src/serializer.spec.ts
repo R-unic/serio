@@ -536,6 +536,25 @@ class SerializationTest {
     Assert.equal(3, z);
   }
 
+  @Fact
+  public packedCFrameBothSpecialCases(): void {
+    const value = new CFrame(0, 0, 0).mul(CFrame.Angles(0, 0, 0));
+    const { buf } = this.serialize<Packed<Transform<u8>>>(value);
+    Assert.defined(buf);
+    Assert.equal(2, len(buf));
+
+    const isOptimized = (readu8(buf, 0) & 1) === 1;
+    Assert.true(isOptimized);
+
+    const packed = readu8(buf, 1);
+    const optimizedPosition = packed & 0x60;
+    Assert.equal(0x20, optimizedPosition);
+
+    const optimizedRotation = packed & 0x1F;
+    Assert.notEqual(0x1F, optimizedRotation);
+    Assert.equal(0, optimizedRotation);
+  }
+
   @Theory
   @InlineData(Vector3.zero, 0x20)
   @InlineData(Vector3.one, 0x60)
@@ -553,7 +572,7 @@ class SerializationTest {
     Assert.equal(bits, optimizedPosition);
 
     const optimizedRotation = packed & 0x1F;
-    Assert.false(optimizedRotation !== 0x1F);
+    Assert.equal(0x1F, optimizedRotation);
   }
 
   @Theory
@@ -600,7 +619,8 @@ class SerializationTest {
     Assert.notEqual(0x60, optimizedPosition);
 
     const optimizedRotation = packed & 0x1F;
-    Assert.true(optimizedRotation !== 0x1F);
+    Assert.notEqual(0x1F, optimizedRotation);
+    Assert.equal(expectedIndex, optimizedRotation);
   }
 
   /** @metadata macro */
