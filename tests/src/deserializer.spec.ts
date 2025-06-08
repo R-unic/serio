@@ -3,7 +3,7 @@ import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 
 import {
   assertFuzzyEqual, assertVectorEqual, assertCFrameEqual, assertIterableEqual, getSerializer,
-  type TestLiteralUnion, type TestObject, type SerializeMetadata
+  type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans
 } from "./utility";
 import type {
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
@@ -147,6 +147,35 @@ class DeserializationTest {
     Assert.equal(value.b, result.b);
     Assert.equal(value.c, result.c);
     Assert.equal(value.d, result.d);
+  }
+
+  @Fact
+  public optional(): void {
+    {
+      const value = { foo: 69 };
+      const result = this.deserialize<{ foo?: u8 }>(value);
+      Assert.defined(result.foo);
+      Assert.equal(value.foo, result.foo);
+    }
+    {
+      const result = this.deserialize<{ foo?: u8 }>({});
+      Assert.undefined(result.foo);
+    }
+  }
+
+  @Fact
+  public packedOptionals(): void {
+    const value = { foo: 69, bar: undefined };
+    const result = this.deserialize<{ foo?: u8, bar?: u8 }>(value);
+    Assert.equal(value.foo, result.foo);
+    Assert.equal(value.bar, result.bar);
+  }
+
+  @Fact
+  public packedBooleans(): void {
+    const value: TestPackedBooleans = { a: true, b: false, c: true, d: false, e: true, f: false, g: true, h: false };
+    const result = this.deserialize<TestPackedBooleans>(value);
+    assertIterableEqual(value as never, result as never);
   }
 
   @Fact

@@ -12,6 +12,17 @@ export interface TestObject {
   readonly d: i32;
 }
 
+export interface TestPackedBooleans {
+  readonly a: boolean;
+  readonly b: boolean;
+  readonly c: boolean;
+  readonly d: boolean;
+  readonly e: boolean;
+  readonly f: boolean;
+  readonly g: boolean;
+  readonly h: boolean;
+}
+
 export interface SerializeMetadata<T> {
   readonly text: Modding.Generic<T, "text">;
   readonly serializerMeta: Modding.Many<SerializerMetadata<T>>;

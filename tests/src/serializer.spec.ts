@@ -8,7 +8,10 @@ import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "../../src/constants";
 import { fuzzyEq } from "../../src/utility";
-import { assertFuzzyEqual, getSerializer, type TestLiteralUnion, type TestObject, type SerializeMetadata } from "./utility";
+import {
+  assertFuzzyEqual, getSerializer,
+  type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans
+} from "./utility";
 import type {
   SerializedData,
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
@@ -283,19 +286,8 @@ class SerializationTest {
 
   @Fact
   public packedBooleans(): void {
-    interface Schema {
-      readonly a: boolean;
-      readonly b: boolean;
-      readonly c: boolean;
-      readonly d: boolean;
-      readonly e: boolean;
-      readonly f: boolean;
-      readonly g: boolean;
-      readonly h: boolean;
-    }
-
-    const value: Schema = { a: true, b: false, c: true, d: false, e: true, f: false, g: true, h: false };
-    const { buf } = this.serialize<Packed<Schema>>(value, {
+    const value: TestPackedBooleans = { a: true, b: false, c: true, d: false, e: true, f: false, g: true, h: false };
+    const { buf } = this.serialize<Packed<TestPackedBooleans>>(value, {
       // this is to guarantee the order of the fields
       text: "Packed<Schema>",
       serializerMeta: ["packed", ["object", [
