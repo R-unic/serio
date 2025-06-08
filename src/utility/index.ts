@@ -1,5 +1,5 @@
 import { IS_LUNE } from "../constants";
-import type { NumberType, Primitive, PrimitiveDataType, SerializerSchema } from "../types";
+import type { NumberType, Primitive } from "../types";
 
 const { sort } = table;
 const { magnitude } = vector;
@@ -69,4 +69,8 @@ export function isNumberType(typeName: string): typeName is NumberType {
 
 export function sign(n: number): -1 | 1 {
   return n < 0 ? -1 : 1;
+}
+
+export function isNaN(n: number): boolean {
+  return n !== n;
 }

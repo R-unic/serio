@@ -1,5 +1,5 @@
 
-import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange } from "./utility";
+import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange, isNaN } from "./utility";
 import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
 import { u24 } from "./utility/u24";
@@ -299,10 +299,19 @@ export function getSerializeFunction<T>(
             const zSign = sign(axis.Z);
             const xAxis = axis.X;
             const maxY = (1 - xAxis ** 2) ** 0.5;
-            const mappedX = map(xAxis, -1, 1, 0, LIMIT_16_BITS);
-            const mappedY = map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign;
-            const mappedAngle = map(angle, 0, PI, 0, LIMIT_16_BITS);
+            let mappedX = map(xAxis, -1, 1, 0, LIMIT_16_BITS);
+            let mappedY = map(axis.Y, -maxY, maxY, 0, LIMIT_15_BITS) * zSign;
+            let mappedAngle = map(angle, 0, PI, 0, LIMIT_16_BITS);
+            if (isNaN(mappedX))
+              mappedX = 0;
+            if (isNaN(mappedY))
+              mappedY = 0;
+            if (isNaN(mappedAngle))
+              mappedAngle = 0;
 
+            assertNumberRange(mappedX, 2, false);
+            assertNumberRange(mappedY, 2, true);
+            assertNumberRange(mappedAngle, 2, false);
             writeu16(buf, newOffset, mappedX);
             writei16(buf, newOffset + 2, mappedY);
             writeu16(buf, newOffset + 4, mappedAngle);
