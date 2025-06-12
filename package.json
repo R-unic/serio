@@ -1,6 +1,6 @@
 {
   "name": "@rbxts/serio",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "author": "runicly",
   "main": "out/init.luau",
   "scripts": {

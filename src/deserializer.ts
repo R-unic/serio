@@ -35,7 +35,6 @@ export function getDeserializeFunction<T>(
   let blobIndex = 0;
   let packing = false;
 
-
   function deserialize(meta: SerializerSchema, serializeOffset = offset): unknown {
     const currentOffset = serializeOffset;
 
@@ -381,7 +380,7 @@ export function getDeserializeFunction<T>(
     blobIndex = 0;
     bitIndex = 0;
 
-    if (containsPacking) {
+    if (containsPacking && buffer.len(buf) > 0) {
       bits = [];
       readBits();
     }

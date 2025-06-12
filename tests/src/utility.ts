@@ -1,7 +1,6 @@
 import type { Modding } from "@flamework/core";
 import { Assert } from "@rbxts/runit";
 
-import { isNaN } from "../src/utility/index";
 import type { Serializer, SerializerMetadata, u8, i32 } from "../src/index";
 import createSerializer from "../src/index";
 

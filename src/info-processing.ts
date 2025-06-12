@@ -20,7 +20,7 @@ export interface ProcessedInfo {
 }
 
 function addPackedBit(info: Writable<ProcessedInfo>): void {
-  if ((info.flags & IterationFlags.Packed) === 0) return;
+  if (!packing(info)) return;
   info.containsPacking = true;
 
   if ((info.flags & IterationFlags.SizeUnknown) !== 0)
@@ -29,6 +29,8 @@ function addPackedBit(info: Writable<ProcessedInfo>): void {
     // We only keep track of guaranteed packing bits, which we can use for optimization.
     info.minimumPackedBits++;
 }
+
+const packing = (info: ProcessedInfo) => (info.flags & IterationFlags.Packed) !== 0;
 
 /**
  * Mutates the given ProcessedInfo object while traversing the given schema in
@@ -42,6 +44,7 @@ function addPackedBit(info: Writable<ProcessedInfo>): void {
  */
 function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): SerializerSchema {
   const [kind] = schema;
+
   switch (kind) {
     case "optional": {
       addPackedBit(info);
@@ -61,7 +64,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       const optionsSize = options.size();
       // Whenever we only have two options, we can use a single bit.
       // We use a byte size of `-1` to indicate a packable union.
-      const isPackable = (info.flags & IterationFlags.Packed) !== 0 && optionsSize === 2;
+      const isPackable = packing(info) && optionsSize === 2;
       if (isPackable)
         addPackedBit(info);
 
@@ -79,7 +82,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       const possibleValuesSize = possibleValues.size();
       // Whenever we only have two options, we can use a single bit.
       // We exclude undefined using `data[2] === 0` as it complicates thing.
-      if ((info.flags & IterationFlags.Packed) !== 0 && possibleValuesSize === 2 && size === 0) {
+      if (packing(info) && possibleValuesSize === 2 && size === 0) {
         addPackedBit(info);
 
         // We use `-1` as the size to signify that this union can be packed,
