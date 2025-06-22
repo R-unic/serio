@@ -65,6 +65,11 @@ export function assertCFrameEqual(expected: CFrame, actual: CFrame, angleEpsilon
     Assert.equal(expected.Z, actual.Z)
   );
 
+  Assert.appendFailedMessage("CFrame Rotation NaN Check", () => {
+    assertNotNaNVector(expected.XVector);
+    assertNotNaNVector(expected.YVector);
+    assertNotNaNVector(expected.ZVector);
+  });
   assertVectorFuzzyEqual(expected.XVector, actual.XVector, angleEpsilon, "CFrame X Vector");
   assertVectorFuzzyEqual(expected.YVector, actual.YVector, angleEpsilon, "CFrame Y Vector");
   assertVectorFuzzyEqual(expected.ZVector, actual.ZVector, angleEpsilon, "CFrame Z Vector");
@@ -81,6 +86,13 @@ export function assertVectorFuzzyEqual(expected: Vector3, actual: Vector3, epsil
   Assert.appendFailedMessage(extra + "Z Coordinate", () =>
     Assert.fuzzyEqual(expected.Z, actual.Z, epsilon)
   );
+}
+
+const NaN = 0 / 0;
+export function assertNotNaNVector(vector: Vector3): void {
+  Assert.notEqual(vector.X, NaN);
+  Assert.notEqual(vector.Y, NaN);
+  Assert.notEqual(vector.Z, NaN);
 }
 
 export function assertVectorEqual(expected: Vector3, actual: Vector3): void {

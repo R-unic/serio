@@ -275,6 +275,8 @@ class DeserializationTest {
   @InlineData(new Vector3(0, 69, 0), vector.create(90, 0, 0))
   @InlineData(new Vector3(0, 69, 0), vector.create(45, 0, 0))
   @InlineData(new Vector3(1, 2, 3), vector.create(45, 0, 69))
+  @InlineData(new Vector3(1, 2, 3), vector.create(0, 180, 0))
+  @InlineData(new Vector3(1, 2, 3), vector.create(0, -180, 0))
   public packedCFrames(position: Vector3, rotation: vector): void {
     const cf = new CFrame(position)
       .mul(angles(rad(rotation.x), rad(rotation.y), rad(rotation.z)));

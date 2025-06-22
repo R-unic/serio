@@ -598,6 +598,7 @@ class SerializationTest {
   @Theory
   @InlineData(vector.zero)
   @InlineData(vector.create(0, 180, 0))
+  @InlineData(vector.create(0, -180, 0))
   @InlineData(vector.create(90, 0, 0))
   @InlineData(vector.create(-90, -180, 0))
   @InlineData(vector.create(0, 180, 180))
@@ -625,7 +626,7 @@ class SerializationTest {
     const expectedIndex = AXIS_ALIGNED_ORIENTATIONS.findIndex(v => v === rotation);
     Assert.notEqual(-1, expectedIndex);
 
-    const value = new CFrame(0, 69, 0).mul(rotation);
+    const value = new CFrame(69, 69, 69).mul(rotation);
     const { buf } = this.serialize<Packed<Transform<u8>>>(value);
     Assert.defined(buf);
     Assert.equal(5, len(buf));
