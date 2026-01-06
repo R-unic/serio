@@ -9,7 +9,8 @@ const testRunner = new TestRunner(replicated.WaitForChild("Tests"));
 testRunner.run({ colors: true })
   .then(() => {
     const report = istanbul();
-    const reportJSON = http.JSONEncode(report);
+    const unmappedJSON = http.JSONEncode(report);
+    const [reportJSON] = unmappedJSON.gsub("\"ReplicatedStorage/Library/([^%s:]+)\"", "\"out/%1.luau\"");
     const coverageValue = new Instance("StringValue");
     coverageValue.Name = "coverage";
     coverageValue.Value = reportJSON;
