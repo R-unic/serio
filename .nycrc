@@ -1,0 +1,9 @@
+{
+  "all": true,
+  "extension": [".luau"],
+  "include": ["out/**/*.luau"],
+  "exclude": ["coverage/**", "node_modules/**"],
+  "report-dir": "coverage",
+  "temp-dir": "coverage",
+  "reporter": ["lcov"]
+}

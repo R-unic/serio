@@ -25,6 +25,7 @@ jobs:
 
       - name: Run Tests
         run: |
+          npm run build
           npm test | tee test-output.txt
           npm run coverage
           output=$(<test-output.txt)
