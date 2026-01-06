@@ -169,6 +169,7 @@ end
 
 runRobloxScript(game.ReplicatedStorage.Tests["run-tests"])
 local reportJSON = game.ReplicatedStorage.coverage.Value
+fs.writeDir("coverage")
 fs.writeFile("coverage/coverage-final.json", reportJSON)
 
 for _, thread in threads do
