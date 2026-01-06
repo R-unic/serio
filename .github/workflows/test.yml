@@ -26,6 +26,7 @@ jobs:
       - name: Run Tests
         run: |
           npm test | tee test-output.txt
+          npm run coverage
           output=$(<test-output.txt)
           cleaned_output=$(echo "$output" | sed 's/\x1b\[[0-9;]*m//g')
           cleaned_output=$(echo "$cleaned_output" | sed 's/\x1b\[0m$//')
