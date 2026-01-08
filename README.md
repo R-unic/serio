@@ -1,5 +1,8 @@
 # Serio
 
+[![CI Status](https://github.com/R-unic/serio/actions/workflows/test.yml/badge.svg)](https://github.com/R-unic/serio/actions/workflows)
+[![Coverage Status](https://coveralls.io/repos/github/R-unic/serio/badge.svg?branch=master)](https://coveralls.io/github/R-unic/serio)
+
 Binary (buffer) serialization library for Roblox built on Flamework.
 
 Heavily inspired by @rbxts/flamework-binary-serializer. It generates schemas for ser/des from just a type just like FBS.

@@ -40,7 +40,7 @@ class SerializationTest {
     Assert.throws(() => this.serialize(n, {
       text: kind,
       serializerMeta: [kind]
-    } as never));
+    } as never), "[string \"ReplicatedStorage.Library.utility\"]:21: [@rbxts/serio]: Attempt to serialize value out of bit range");
   }
 
   @Fact
