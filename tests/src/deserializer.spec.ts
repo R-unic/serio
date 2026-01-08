@@ -80,8 +80,22 @@ class DeserializationTest {
   }
 
   @Fact
+  public f16Negative(): void {
+    const n = -69.42;
+    const result = this.deserialize<f16>(n);
+    Assert.fuzzyEqual(n, result, 5e-2);
+  }
+
+  @Fact
   public f24(): void {
     const n = 69.45;
+    const result = this.deserialize<f24>(n);
+    Assert.fuzzyEqual(n, result, 1e-3);
+  }
+
+  @Fact
+  public f24Negative(): void {
+    const n = -69.45;
     const result = this.deserialize<f24>(n);
     Assert.fuzzyEqual(n, result, 1e-3);
   }
