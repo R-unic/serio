@@ -1,10 +1,14 @@
 import type { Modding } from "@flamework/core";
 import { Assert } from "@rbxts/runit";
 
-import type { Serializer, SerializerMetadata, u8, i32 } from "../src/index";
+import type { Serializer, SerializerMetadata, u8, i32, String, Vector, u16 } from "../src/index";
 import createSerializer from "../src/index";
 
 export type TestLiteralUnion = "a" | "b" | "c" | "d";
+export type TestMixedLiteralUnion = "a" | 69 | true;
+export type TestTaggedUnion = { tag: "a", value: u8 } | { tag: "b", value: String<u8> };
+export type TestComplexUnion = String<u8> | u8 | { a: String<u8> } | { b: u16 } | Vector3;
+
 export interface TestObject {
   readonly a: u8;
   readonly b: boolean;
@@ -25,7 +29,7 @@ export interface TestPackedBooleans {
 
 export interface SerializeMetadata<T> {
   readonly text: Modding.Generic<T, "text">;
-  readonly serializerMeta: Modding.Many<SerializerMetadata<T>>;
+  readonly serializerMeta: SerializerMetadata<T>;
 }
 
 const serializers = new Map<string, Serializer<any>>;
@@ -37,7 +41,7 @@ export function getSerializer<T>(meta?: SerializeMetadata<T>): Serializer<T> | u
   const { text, serializerMeta } = meta;
   let serializer = serializers.get(text);
   if (serializer === undefined)
-    serializers.set(text, serializer = createSerializer<T>(serializerMeta));
+    serializers.set(text, serializer = createSerializer<T>(serializerMeta as never));
 
   return serializer;
 }

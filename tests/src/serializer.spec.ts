@@ -646,8 +646,8 @@ class SerializationTest {
 
   /** @metadata macro */
   private serialize<T>(value: T, meta?: Modding.Many<SerializeMetadata<T>>): SerializedData {
-    const serializer = getSerializer<T>(meta);
-    return serializer?.serialize(value)!;
+    const serializer = getSerializer<T>(meta)!;
+    return serializer.serialize(value);
   }
 }
 

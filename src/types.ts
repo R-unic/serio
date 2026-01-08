@@ -11,8 +11,7 @@ export type FloatType = "f16" | "f24" | "f32" | "f64";
 export type NumberType = IntType | FloatType;
 
 export type PrimitiveDataType =
-  | IntType
-  | FloatType
+  | NumberType
   | "bool"
   | "color"
   | "colorsequence"
@@ -35,6 +34,6 @@ export type SerializerSchema =
   | ["enum", string]
   | ["union", string, [unknown, SerializerSchema][], number]
   | ["guard_union", (readonly [SerializerSchema, ((value: unknown) => boolean) | undefined])[]]
-  | ["literal", defined[], number]
-  | ["blob", defined]
-  | [Modifiers, SerializerSchema];
+  | ["literal", values: defined[], index: number]
+  | ["blob", value: defined]
+  | [Modifiers, body: SerializerSchema];

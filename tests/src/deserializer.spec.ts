@@ -3,7 +3,9 @@ import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 
 import {
   assertVectorEqual, assertCFrameEqual, assertIterableEqual, getSerializer,
-  type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans
+  type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans,
+  type TestMixedLiteralUnion, type TestTaggedUnion,
+  TestComplexUnion
 } from "./utility";
 import type {
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
@@ -141,9 +143,59 @@ class DeserializationTest {
   @InlineData("b")
   @InlineData("c")
   @InlineData("d")
-  public literalUnions(value: TestLiteralUnion): void {
+  public stringLiteralUnions(value: TestLiteralUnion): void {
     const result = this.deserialize<TestLiteralUnion>(value);
     Assert.equal(value, result);
+  }
+
+  @Theory
+  @InlineData("a")
+  @InlineData(69)
+  @InlineData(true)
+  public mixedLiteralUnions(value: TestMixedLiteralUnion): void {
+    const result = this.deserialize<TestMixedLiteralUnion>(value);
+    Assert.equal(value, result);
+  }
+
+  @Theory
+  @InlineData({ tag: "a", value: 69 })
+  @InlineData({ tag: "b", value: "hello!" })
+  public taggedUnions(value: TestTaggedUnion): void {
+    const result = this.deserialize<TestTaggedUnion>(value);
+    Assert.isType<TestTaggedUnion>(result);
+    Assert.equal(value.tag, result.tag);
+    Assert.equal(result.value, value.value);
+  }
+
+  @Theory
+  @InlineData("abc")
+  @InlineData(69)
+  @InlineData({ a: "foo" })
+  @InlineData({ b: 420 })
+  @InlineData(new Vector3(69, 0, 42))
+  public complexUnions(value: TestComplexUnion): void {
+    const result = this.deserialize<TestComplexUnion>(value);
+    if (typeIs(value, "Vector3")) {
+      Assert.isCheckableType(result, "vector");
+
+      const v = result as Vector3;
+      Assert.equal(value.X, v.X);
+      Assert.equal(value.Y, v.Y);
+      Assert.equal(value.Z, v.Z);
+      return;
+    }
+
+    if (!typeIs(result, "table"))
+      return Assert.equal(value, result);
+
+    Assert.true("a" in value || "b" in value);
+    if ("a" in value) {
+      Assert.hasProperty(result, "a");
+      Assert.equal(value.a, (result as { a: unknown }).a);
+    } else if ("b" in value) {
+      Assert.hasProperty(result, "b");
+      Assert.equal(value.b, (result as { b: unknown }).b);
+    }
   }
 
   @Theory
