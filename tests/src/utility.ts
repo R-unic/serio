@@ -7,7 +7,7 @@ import createSerializer from "../src/index";
 export type TestLiteralUnion = "a" | "b" | "c" | "d";
 export type TestMixedLiteralUnion = "a" | 69 | true;
 export type TestTaggedUnion = { tag: "a", value: u8 } | { tag: "b", value: String<u8> };
-export type TestComplexUnion = String<u8> | u8 | { a: String<u8> } | { b: u16 } | Vector3;
+export type TestComplexUnion = String<u8> | u8 | { a: String<u8> } | { b: u16 } | Vector<u8>;
 
 export interface TestObject {
   readonly a: u8;

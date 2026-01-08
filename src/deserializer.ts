@@ -5,7 +5,7 @@ import { u24 } from "./utility/u24";
 import { i24 } from "./utility/i24";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS, IS_LUNE } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
-import type { NumberType, Primitive, SerializedData, SerializerSchema } from "./types";
+import type { SerializedData, SerializerSchema } from "./types";
 
 const { ceil, map, pi: PI } = math;
 const { create: createVector } = vector;
