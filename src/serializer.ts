@@ -337,8 +337,17 @@ export function getSerializeFunction<T>(
       case "union": {
         const [_, tagName, tagged, byteSize] = meta;
         const objectTag = (value as Map<unknown, unknown>).get(tagName);
-        const tagMap = new Map(tagged.map<[unknown, [number, SerializerSchema]]>(([tag, schema], i) => [tag, [i, schema]]));
-        const [tagIndex, tagMetadata] = tagMap.get(objectTag)!;
+
+        let tagIndex = 0;
+        let tagMetadata!: SerializerSchema;
+        for (const i of $range(1, tagged.size())) {
+          const tagObject = tagged[i - 1];
+          if (tagObject[0] === objectTag) {
+            tagIndex = i - 1;
+            tagMetadata = tagObject[1];
+            break;
+          }
+        }
 
         if (byteSize === 1) {
           assertNumberRange(tagIndex, 1, false, "literal union tag index");
@@ -352,6 +361,32 @@ export function getSerializeFunction<T>(
           bits.push(tagIndex === 0);
 
         serialize(value, tagMetadata);
+        break;
+      }
+      case "guard_union": {
+        const constituents = meta[1];
+
+        let serializerIndex: number | undefined;
+        let serializer!: SerializerSchema;
+        for (const i of $range(1, constituents.size())) {
+          // Flamework can't generate "any table" guards so it gets replaced with nil
+          const constituent = constituents[i - 1];
+          const guard = constituent[1];
+          if (guard ? guard(value) : typeIs(value, "table")) {
+            serializerIndex = i - 1;
+            serializer = constituent[0];
+          }
+        }
+
+        if (serializerIndex === undefined)
+          throw `[@rbxts/serio]: Value '${value}' matches none of the generated guards
+          Stemmed from: ${originalValue}`;
+
+        // Supports 256 unions for the time being.
+        allocate(1);
+        buffer.writeu8(buf, currentOffset, serializerIndex);
+
+        serialize(value, serializer);
         break;
       }
       case "literal": {

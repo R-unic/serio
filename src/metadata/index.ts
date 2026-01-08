@@ -1,9 +1,9 @@
-import type { FindDiscriminator, IsDiscriminableUnion, IsLiteralUnion, IsUnion } from "./unions";
+import type { FindDiscriminator, HasNominal, HasSingularObjectConstituent, IsDiscriminableUnion, IsLiteralUnion, IsTableObject, IsUnion } from "./unions";
 import type { HasRest, RestType, SplitRest } from "./tuples";
 import type { f32, u16, u32 } from "../data-types";
+import { Modding } from "@flamework/core";
 
 type IsNumber<T, K extends string> = `_${K}` extends keyof T ? true : false;
-type HasNominal<T> = T extends T ? (T extends `_nominal_${string}` ? true : never) : never;
 type GetEnumType<T> = [T] extends [EnumItem] ? ExtractKeys<Enums, T["EnumType"]> : never;
 
 /** A shortcut for defining Roblox datatypes (which map directly to a simple type) */
@@ -117,6 +117,17 @@ export type SerializerMetadata<T> =
     : never,
     // This is the byte size length. This is annoying (and slow) to calculate in TS, so it's done at runtime.
     -1,
+  ]
+  : IsUnion<T> extends true
+  ? [
+    "guard_union",
+    (HasSingularObjectConstituent<T> extends infer U
+      ? T extends T
+      ? [IsTableObject<T>, U] extends [true, true]
+      ? [SerializerMetadata<T>, undefined]
+      : [SerializerMetadata<T>, Modding.Generic<T, "guard">]
+      : never
+      : never)[],
   ]
   : true extends HasNominal<keyof T>
   ? ["blob"]

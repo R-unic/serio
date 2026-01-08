@@ -19,6 +19,7 @@ export interface ProcessedInfo {
   readonly sortedEnums: Record<string, EnumItem[]>;
 }
 
+const packing = (info: ProcessedInfo) => (info.flags & IterationFlags.Packed) !== 0;
 function addPackedBit(info: Writable<ProcessedInfo>): void {
   if (!packing(info)) return;
   info.containsPacking = true;
@@ -29,8 +30,6 @@ function addPackedBit(info: Writable<ProcessedInfo>): void {
     // We only keep track of guaranteed packing bits, which we can use for optimization.
     info.minimumPackedBits++;
 }
-
-const packing = (info: ProcessedInfo) => (info.flags & IterationFlags.Packed) !== 0;
 
 /**
  * Mutates the given ProcessedInfo object while traversing the given schema in
@@ -75,6 +74,12 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
         options.map(([key, schema]): [unknown, SerializerSchema] => [key, schemaPass(schema, info)]),
         isPackable ? -1 : (optionsSize > 256 ? 2 : 1),
       ];
+      break;
+    }
+    case "guard_union": {
+      info.flags |= IterationFlags.SizeUnknown;
+
+      schema = [kind, schema[1].map((v) => [schemaPass(v[0], info), v[1]] as const)];
       break;
     }
     case "literal": {

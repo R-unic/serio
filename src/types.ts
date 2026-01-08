@@ -34,6 +34,7 @@ export type SerializerSchema =
   | ["map", keyType: SerializerSchema, valueType: SerializerSchema, lengthType: Primitive<IntType>]
   | ["enum", string]
   | ["union", string, [unknown, SerializerSchema][], number]
+  | ["guard_union", (readonly [SerializerSchema, ((value: unknown) => boolean) | undefined])[]]
   | ["literal", defined[], number]
   | ["blob", defined]
   | [Modifiers, SerializerSchema];

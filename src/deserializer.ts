@@ -224,11 +224,11 @@ export function getDeserializeFunction<T>(
       }
       case "object": {
         const [_, fields] = meta;
-        const obj: Record<string, unknown> = {};
+        const object: Record<string, unknown> = {};
         for (const [name, fieldMeta] of fields)
-          obj[name] = deserialize(fieldMeta);
+          object[name] = deserialize(fieldMeta);
 
-        return obj;
+        return object;
       }
       case "union": {
         const [_, tagName, tagged, byteSize] = meta;
@@ -248,6 +248,13 @@ export function getDeserializeFunction<T>(
         (object as Record<string, unknown>)[tagName] = tagValue;
 
         return object;
+      }
+      case "guard_union": {
+        const [_, serializers] = meta;
+        const [deserializer] = serializers[readu8(buf, currentOffset)];
+        offset += 1;
+
+        return deserialize(deserializer);
       }
       case "literal": {
         const [_, literals, byteSize] = meta;
