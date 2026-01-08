@@ -41,7 +41,7 @@ print(result.epic, result.foo);
 
 ## Data Types
 
-Serio can serialize many data types, including numeric types not natively supported by the `buffer` library. Namely
+Serio can serialize many data types, including numeric types not natively supported by the `buffer` library.
 
 ### Safety
 
@@ -64,7 +64,7 @@ interface CoolTypes {
 
 ### Customization
 
-Serio encourages full customization over the size of serialed values.
+Serio encourages full customization over the size of serialized values.
 
 ```ts
 import type { List, String, HashSet, HashMap, Tuple, Vector, ScaleOffset, ScaleOffset2, i8, u8, i16, u16 } from "@rbxts/serio";
@@ -102,7 +102,7 @@ const serializer = createSerializer<Example>();
 
 Serio can bitpack your data for you using the `Packed<T>` datatype. It bitpacks every type under `T` recursively.
 
-You may know a boolean can be represented by just one bit, but to insert a boolean into a buffer you need to serialize it as an entire byte (8 bits). This is where bitpacking comes in. We can keep track of a list of bits to later combine together into a single byte, rather than one byte for each of your booleans.
+You may know a boolean can be represented by just one bit, but to insert a boolean into a buffer you need to serialize it as an entire byte (8 bits). This is where bitpacking comes in. We can keep track of a list of bits to later combine together into a single byte (for 8 or less booleans), rather than one byte for each of your booleans.
 
 This doesn't just affect booleans though, it also affects:
 
@@ -135,6 +135,8 @@ This doesn't just affect booleans though, it also affects:
 - ColorSequence
 - NumberSequence
 - Literal unions
+- Tagged unions
+- Complex mixed unions
 - Enums
 
 ## Optimization
