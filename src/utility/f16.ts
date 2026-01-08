@@ -11,7 +11,7 @@ export namespace f16 {
   }
 
   export function toF32(n: number): number {
-    const sign = n >>> 23 === 1;
+    const sign = n >>> 15 === 1;
     const signMult = sign ? -1 : 1;
     const exponent = (n >> 10) & 0x1F;
     const mantissa = n & 0x3FF;
