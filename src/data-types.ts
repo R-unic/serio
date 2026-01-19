@@ -4,7 +4,7 @@ import type { AnySize } from "./types";
 import type { f16_meta, f24_meta, f32_meta, f64_meta, i16_meta, i24_meta, i32_meta, i8_meta, list_meta, map_meta, packed_meta, set_meta, string_meta, transform_meta, tuple_meta, u16_meta, u24_meta, u32_meta, u8_meta, udim2_meta, udim_meta, vector_meta } from "./meta-symbols";
 
 type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
-type StripMeta<T, Depth extends number = 32> =
+export type StripMeta<T, Depth extends number = 32> =
   [Depth] extends [never]
   ? T
   : T extends string | number | boolean | undefined
@@ -48,8 +48,6 @@ type StripMeta<T, Depth extends number = 32> =
     ]: StripMeta<T[K], Prev[Depth]>
   }
   : T;
-
-export type SchemaGuard<T> = Modding.Generic<StripMeta<T>, "guard">;
 
 export type u8 = number & { readonly [u8_meta]?: never };
 export type u16 = number & { readonly [u16_meta]?: never };

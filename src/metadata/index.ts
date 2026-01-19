@@ -2,7 +2,7 @@ import type { Modding } from "@flamework/core";
 
 import type { FindDiscriminator, HasNominal, HasSingularObjectConstituent, IsDiscriminableUnion, IsLiteralUnion, IsTableObject, IsUnion } from "./unions";
 import type { HasRest, RestType, SplitRest } from "./tuples";
-import type { f32, SchemaGuard, u16, u32 } from "../data-types";
+import type { StripMeta, f32, u16, u32 } from "../data-types";
 import type { f16_meta, f24_meta, f32_meta, f64_meta, i16_meta, i24_meta, i32_meta, i8_meta, list_meta, map_meta, packed_meta, set_meta, string_meta, transform_meta, tuple_meta, u16_meta, u24_meta, u32_meta, u8_meta, udim2_meta, udim_meta, vector_meta } from "../meta-symbols";
 
 type GetEnumType<T> = [T] extends [EnumItem] ? ExtractKeys<Enums, T["EnumType"]> : never;
@@ -126,7 +126,7 @@ export type SerializerMetadata<T> =
       ? T extends T
       ? [IsTableObject<T>, U] extends [true, true]
       ? [SerializerMetadata<T>, undefined]
-      : [SerializerMetadata<T>, SchemaGuard<T>]
+      : [SerializerMetadata<T>, Modding.Generic<StripMeta<T>, "guard">]
       : never
       : never)[],
   ]
