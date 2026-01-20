@@ -4,13 +4,31 @@ type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
 export type StripMeta<T, Depth extends number = 32> =
   [Depth] extends [never]
   ? T
-  : StripMetaImpl<NormalizePrimitive<T>, Depth>;
+  : StripMetaStep<T, Depth>;
+
+type Primitive =
+  | string
+  | number
+  | boolean
+  | undefined;
+
+type IsPrimitiveLike<T> =
+  [T] extends [Primitive] ? true :
+  T extends number ? true :
+  T extends string ? true :
+  T extends boolean ? true :
+  false;
 
 type NormalizePrimitive<T> =
-  T extends number ? number :
-  T extends string ? string :
-  T extends boolean ? boolean :
-  T;
+  IsPrimitiveLike<T> extends true
+  ? T extends number
+  ? number
+  : T extends string
+  ? string
+  : T extends boolean
+  ? boolean
+  : T
+  : T;
 
 type StripMetaProps<T> = {
   [K in keyof T as
@@ -22,9 +40,9 @@ type StripMetaProps<T> = {
   ]: T[K]
 };
 
-type StripMetaImpl<T, Depth extends number> =
-  T extends string | number | boolean | undefined
-  ? T
+type StripMetaStep<T, Depth extends number> =
+  IsPrimitiveLike<T> extends true
+  ? NormalizePrimitive<T>
   : T extends Vector
   ? Vector3
   : T extends Transform
@@ -39,7 +57,9 @@ type StripMetaImpl<T, Depth extends number> =
   ? buffer
   : T extends Callback
   ? T
-  : T extends Packed<infer V>
+  : T extends readonly (infer U)[]
+  ? readonly StripMeta<U, Prev[Depth]>[]
+  : T extends { readonly _packed?: [infer V] }
   ? StripMeta<V, Prev[Depth]>
   : T extends List<infer V>
   ? StripMeta<V, Prev[Depth]>[]
@@ -49,12 +69,9 @@ type StripMetaImpl<T, Depth extends number> =
   ? Set<StripMeta<V, Prev[Depth]>>
   : T extends HashMap<infer K, infer V>
   ? Map<StripMeta<K, Prev[Depth]>, StripMeta<V, Prev[Depth]>>
-  : T extends readonly (infer U)[]
-  ? readonly StripMeta<U, Prev[Depth]>[]
   : T extends object
   ? {
-    [K in keyof StripMetaProps<T>]:
-    StripMeta<StripMetaProps<T>[K], Prev[Depth]>
+    [K in keyof StripMetaProps<T>]: StripMeta<StripMetaProps<T>[K], Prev[Depth]>
   }
   : T;
 
