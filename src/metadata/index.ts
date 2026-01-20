@@ -2,7 +2,7 @@ import type { Modding } from "@flamework/core";
 
 import type { FindDiscriminator, HasNominal, HasSingularObjectConstituent, IsDiscriminableUnion, IsLiteralUnion, IsTableObject, IsUnion } from "./unions";
 import type { HasRest, RestType, SplitRest } from "./tuples";
-import type { StripMeta, f32, u16, u32 } from "../data-types";
+import type { StripMeta, f16, f24, f32, f64, i16, i24, i32, i8, u16, u24, u32, u8 } from "../data-types";
 import type { f16_meta, f24_meta, f32_meta, f64_meta, i16_meta, i24_meta, i32_meta, i8_meta, list_meta, map_meta, packed_meta, set_meta, string_meta, transform_meta, tuple_meta, u16_meta, u24_meta, u32_meta, u8_meta, udim2_meta, udim_meta, vector_meta } from "../meta-symbols";
 
 type GetEnumType<T> = [T] extends [EnumItem] ? ExtractKeys<Enums, T["EnumType"]> : never;
@@ -47,29 +47,29 @@ export type SerializerMetadata<T> =
   ? ["packed", SerializerMetadata<V>]
   : undefined extends T
   ? ["optional", SerializerMetadata<NonNullable<T>>]
-  : [T] extends [{ readonly [f64_meta]?: never }]
+  : [T] extends [f64]
   ? ["f64"]
-  : [T] extends [{ readonly [f32_meta]?: never }]
+  : [T] extends [f32]
   ? ["f32"]
-  : [T] extends [{ readonly [f24_meta]?: never }]
+  : [T] extends [f24]
   ? ["f24"]
-  : [T] extends [{ readonly [f16_meta]?: never }]
+  : [T] extends [f16]
   ? ["f16"]
-  : [T] extends [{ readonly [u8_meta]?: never }]
+  : [T] extends [u8]
   ? ["u8"]
-  : [T] extends [{ readonly [u16_meta]?: never }]
+  : [T] extends [u16]
   ? ["u16"]
-  : [T] extends [{ readonly [u24_meta]?: never }]
+  : [T] extends [u24]
   ? ["u24"]
-  : [T] extends [{ readonly [u32_meta]?: never }]
+  : [T] extends [u32]
   ? ["u32"]
-  : [T] extends [{ readonly [i8_meta]?: never }]
+  : [T] extends [i8]
   ? ["i8"]
-  : [T] extends [{ readonly [i16_meta]?: never }]
+  : [T] extends [i16]
   ? ["i16"]
-  : [T] extends [{ readonly [i24_meta]?: never }]
+  : [T] extends [i24]
   ? ["i24"]
-  : [T] extends [{ readonly [i32_meta]?: never }]
+  : [T] extends [i32]
   ? ["i32"]
   : [T] extends [boolean]
   ? ["bool"]
