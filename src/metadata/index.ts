@@ -2,8 +2,7 @@ import type { Modding } from "@flamework/core";
 
 import type { FindDiscriminator, HasNominal, HasSingularObjectConstituent, IsDiscriminableUnion, IsLiteralUnion, IsTableObject, IsUnion } from "./unions";
 import type { HasRest, RestType, SplitRest } from "./tuples";
-import type { StripMeta, f16, f24, f32, f64, i16, i24, i32, i8, u16, u24, u32, u8 } from "../data-types";
-import type { f16_meta, f24_meta, f32_meta, f64_meta, i16_meta, i24_meta, i32_meta, i8_meta, list_meta, map_meta, packed_meta, set_meta, string_meta, transform_meta, tuple_meta, u16_meta, u24_meta, u32_meta, u8_meta, udim2_meta, udim_meta, vector_meta } from "../meta-symbols";
+import type { StripMeta, f32, u16, u32 } from "../data-types";
 
 type GetEnumType<T> = [T] extends [EnumItem] ? ExtractKeys<Enums, T["EnumType"]> : never;
 
@@ -15,7 +14,7 @@ interface DataTypes {
 }
 
 type TupleMetadata<T extends unknown[]> =
-  [typeof tuple_meta, T] extends [keyof T, { readonly [tuple_meta]?: [infer V extends unknown[], infer RestLengthType]; }]
+  ["_tuple", T] extends [keyof T, { readonly _tuple?: [infer V extends unknown[], infer RestLengthType]; }]
   ? [
     "tuple",
     SplitRest<V> extends infer A ? { [K in keyof A]: SerializerMetadata<A[K]> } : never,
@@ -30,7 +29,7 @@ type TupleMetadata<T extends unknown[]> =
   ];
 
 type ListMetadata<T extends unknown[]> =
-  [typeof list_meta, T] extends [keyof T, { readonly [list_meta]?: [infer V, infer Size]; }]
+  ["_list", T] extends [keyof T, { readonly _list?: [infer V, infer Size]; }]
   ? ["list", SerializerMetadata<V>, SerializerMetadata<Size>]
   : ["list", SerializerMetadata<T[number]>, SerializerMetadata<u32>];
 
@@ -43,63 +42,63 @@ export type SerializerMetadata<T> =
   ? ["literal", NonNullable<T>[], true extends IsUnion<T> ? (undefined extends T ? 1 : 0) : -1]
   : unknown extends T
   ? ["optional", ["blob"]]
-  : [typeof packed_meta, T] extends [keyof T, { readonly [packed_meta]?: [infer V] }]
+  : ["_packed", T] extends [keyof T, { readonly _packed?: [infer V] }]
   ? ["packed", SerializerMetadata<V>]
   : undefined extends T
   ? ["optional", SerializerMetadata<NonNullable<T>>]
-  : [T] extends [{ readonly [f64_meta]?: undefined }]
+  : [T] extends [{ readonly _f64?: never }]
   ? ["f64"]
-  : [T] extends [{ readonly [f32_meta]?: undefined }]
+  : [T] extends [{ readonly _f32?: never }]
   ? ["f32"]
-  : [T] extends [{ readonly [f24_meta]?: undefined }]
+  : [T] extends [{ readonly _f24?: never }]
   ? ["f24"]
-  : [T] extends [{ readonly [f16_meta]?: undefined }]
+  : [T] extends [{ readonly _f16?: never }]
   ? ["f16"]
-  : [T] extends [{ readonly [u8_meta]?: undefined }]
+  : [T] extends [{ readonly _u8?: never }]
   ? ["u8"]
-  : [T] extends [{ readonly [u16_meta]?: undefined }]
+  : [T] extends [{ readonly _u16?: never }]
   ? ["u16"]
-  : [T] extends [{ readonly [u24_meta]?: undefined }]
+  : [T] extends [{ readonly _u24?: never }]
   ? ["u24"]
-  : [T] extends [{ readonly [u32_meta]?: undefined }]
+  : [T] extends [{ readonly _u32?: never }]
   ? ["u32"]
-  : [T] extends [{ readonly [i8_meta]?: undefined }]
+  : [T] extends [{ readonly _i8?: never }]
   ? ["i8"]
-  : [T] extends [{ readonly [i16_meta]?: undefined }]
+  : [T] extends [{ readonly _i16?: never }]
   ? ["i16"]
-  : [T] extends [{ readonly [i24_meta]?: undefined }]
+  : [T] extends [{ readonly _i24?: never }]
   ? ["i24"]
-  : [T] extends [{ readonly [i32_meta]?: undefined }]
+  : [T] extends [{ readonly _i32?: never }]
   ? ["i32"]
   : [T] extends [boolean]
   ? ["bool"]
   : [T] extends [number]
   ? ["f32"]
-  : [typeof string_meta, T] extends [keyof T, { readonly [string_meta]?: [infer V] }]
+  : ["_string", T] extends [keyof T, { readonly _string?: [infer V] }]
   ? ["string", SerializerMetadata<V>]
   : [T] extends [string]
   ? ["string", SerializerMetadata<u32>]
-  : [typeof udim_meta, T] extends [keyof T, { readonly [udim_meta]?: [infer Scale, infer Offset] }]
+  : ["_udim", T] extends [keyof T, { readonly _udim?: [infer Scale, infer Offset] }]
   ? ["udim", SerializerMetadata<Scale>, SerializerMetadata<Offset>]
   : [T] extends [UDim]
   ? ["udim", SerializerMetadata<f32>, SerializerMetadata<u16>]
-  : [typeof udim2_meta, T] extends [keyof T, { readonly [udim2_meta]?: [infer ScaleX, infer OffsetX, infer ScaleY, infer OffsetY] }]
+  : ["_udim2", T] extends [keyof T, { readonly _udim2?: [infer ScaleX, infer OffsetX, infer ScaleY, infer OffsetY] }]
   ? ["udim2", SerializerMetadata<ScaleX>, SerializerMetadata<OffsetX>, SerializerMetadata<ScaleY>, SerializerMetadata<OffsetY>]
   : [T] extends [UDim2]
   ? ["udim2", SerializerMetadata<f32>, SerializerMetadata<u16>, SerializerMetadata<f32>, SerializerMetadata<u16>]
-  : [typeof vector_meta, T] extends [keyof T, { readonly [vector_meta]?: [infer X, infer Y, infer Z] }]
+  : ["_vector", T] extends [keyof T, { readonly _vector?: [infer X, infer Y, infer Z] }]
   ? ["vector", SerializerMetadata<X>, SerializerMetadata<Y>, SerializerMetadata<Z>]
   : [T] extends [Vector3]
   ? ["vector", SerializerMetadata<f32>, SerializerMetadata<f32>, SerializerMetadata<f32>]
-  : [typeof transform_meta, T] extends [keyof T, { readonly [transform_meta]?: [infer X, infer Y, infer Z] }]
+  : ["_cf", T] extends [keyof T, { readonly _cf?: [infer X, infer Y, infer Z] }]
   ? ["cframe", SerializerMetadata<X>, SerializerMetadata<Y>, SerializerMetadata<Z>]
   : [T] extends [CFrame]
   ? ["cframe", SerializerMetadata<f32>, SerializerMetadata<f32>, SerializerMetadata<f32>]
-  : [typeof set_meta, T] extends [keyof T, { readonly [set_meta]?: [infer V, infer LengthType] }]
+  : ["_set", T] extends [keyof T, { readonly _set?: [infer V, infer LengthType] }]
   ? ["set", SerializerMetadata<V>, SerializerMetadata<LengthType>]
   : [T] extends [ReadonlySet<infer V>]
   ? ["set", SerializerMetadata<V>, SerializerMetadata<u32>]
-  : [typeof map_meta, T] extends [keyof T, { readonly [map_meta]?: [infer K, infer V, infer LengthType] }]
+  : ["_map", T] extends [keyof T, { readonly _map?: [infer K, infer V, infer LengthType] }]
   ? ["map", SerializerMetadata<K>, SerializerMetadata<V>, SerializerMetadata<LengthType>]
   : [T] extends [ReadonlyMap<infer K, infer V>]
   ? ["map", SerializerMetadata<K>, SerializerMetadata<V>, SerializerMetadata<u32>]
