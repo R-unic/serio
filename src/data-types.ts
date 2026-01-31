@@ -43,6 +43,8 @@ type StripMetaProps<T> = {
 type StripMetaStep<T, Depth extends number> =
   IsPrimitiveLike<T> extends true
   ? NormalizePrimitive<T>
+  : T extends Instance
+  ? T
   : T extends Vector
   ? Vector3
   : T extends Transform
