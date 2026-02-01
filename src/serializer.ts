@@ -397,11 +397,9 @@ export function getSerializeFunction<T>(
         }
 
         const index = literals.indexOf(value as defined);
-        if (index === -1)
-          throw `[@rbxts/serio]: Failed to serialize unknown literal value '${value}'
-          Stemmed from: ${originalValue}`;
+        if (index !== -1)
+          assertNumberRange(index, byteSize, false, "literal index");
 
-        assertNumberRange(index, byteSize, false, "literal index");
         allocate(byteSize);
         if (byteSize === 1)
           writeu8(buf, currentOffset, index);
