@@ -4,8 +4,7 @@ import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 import {
   assertVectorEqual, assertCFrameEqual, assertIterableEqual, getSerializer,
   type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans,
-  type TestMixedLiteralUnion, type TestTaggedUnion,
-  TestComplexUnion
+  type TestMixedLiteralUnion, type TestTaggedUnion, type TestComplexUnion, type NullableLiteralUnion
 } from "./utility";
 import type {
   u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
@@ -135,6 +134,17 @@ class DeserializationTest {
   @InlineData(false)
   public boolean(value: boolean): void {
     const result = this.deserialize<boolean>(value);
+    Assert.equal(value, result);
+  }
+
+  @Theory
+  @InlineData("a")
+  @InlineData("b")
+  @InlineData("c")
+  @InlineData("d")
+  @InlineData(undefined)
+  public nullableLiteralUnions(value: NullableLiteralUnion): void {
+    const result = this.deserialize<NullableLiteralUnion>(value);
     Assert.equal(value, result);
   }
 

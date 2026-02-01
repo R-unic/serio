@@ -4,6 +4,7 @@ import { Assert } from "@rbxts/runit";
 import type { Serializer, SerializerMetadata, u8, i32, String, Vector, u16 } from "../src/index";
 import createSerializer from "../src/index";
 
+export type NullableLiteralUnion = TestLiteralUnion | undefined;
 export type TestLiteralUnion = "a" | "b" | "c" | "d";
 export type TestMixedLiteralUnion = "a" | 69 | true;
 export type TestTaggedUnion = { tag: "a", value: u8 } | { tag: "b", value: String<u8> };
@@ -40,7 +41,7 @@ export function getSerializer<T>(meta?: SerializeMetadata<T>): Serializer<T> | u
 
   const { text, serializerMeta } = meta;
   let serializer = serializers.get(text);
-  if (serializer === undefined)
+  if (!serializer)
     serializers.set(text, serializer = createSerializer<T>(serializerMeta as never));
 
   return serializer;
