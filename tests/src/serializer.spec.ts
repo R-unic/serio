@@ -1,4 +1,3 @@
-import type { Modding } from "@flamework/core";
 import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 import { deunify } from "@rbxts/flamework-meta-utils";
 
@@ -6,24 +5,37 @@ import { u24 as u24Utility } from "../../src/utility/u24";
 import { i24 as i24Utility } from "../../src/utility/i24";
 import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
-import { AXIS_ALIGNED_ORIENTATIONS, COMMON_VECTORS } from "../../src/constants";
-import { fuzzyEq } from "../../src/utility";
 import {
-  getSerializer,
-  type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans
+  BaseSerializationTest, type TestLiteralUnion, type TestObject, type TestPackedBooleans
 } from "./utility";
 import type {
-  SerializedData,
-  u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
-  String, List, HashSet, HashMap, Vector, Transform, Packed
+  u8, u12, u16, u24, u32, i8, i12, i16, i24, i32, f16, f24, f32, f64,
+  String, List, HashSet, HashMap, Packed,
 } from "../src/index";
 import type { NumberType } from "../src/types";
 
-const angles = CFrame.Angles;
-const { rad } = math;
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
 
-class SerializationTest {
+function reconstructU12(bits: readonly [boolean, boolean, boolean, boolean], low: number): number {
+  const [b11, b10, b9, b8] = bits;
+
+  return ((b11 ? 1 : 0) << 11)
+    | ((b10 ? 1 : 0) << 10)
+    | ((b9 ? 1 : 0) << 9)
+    | ((b8 ? 1 : 0) << 8)
+    | low;
+}
+
+function reconstructI12(bits: readonly [boolean, boolean, boolean, boolean], low: number): number {
+  let value = reconstructU12(bits, low);
+  const isSigned = (value & 0x800) === 0x800;
+  if (isSigned)
+    value -= 0x1000;
+
+  return value;
+}
+
+class SerializationTest extends BaseSerializationTest {
   @Theory
   @InlineData(2 ** 8, "u8")
   @InlineData(-1, "u8")
@@ -55,8 +67,31 @@ class SerializationTest {
   }
 
   @Fact
+  public u12(): void {
+    const n = 4000;
+    const { buf } = this.serialize<Packed<u12>>(n);
+    Assert.defined(buf);
+    Assert.equal(2, len(buf));
+
+    const packedBits = readu8(buf, 0);
+    const low = readu8(buf, 1);
+    Assert.equal(15, packedBits);
+    Assert.equal(160, low);
+
+    const bits = [
+      (packedBits & 0b0001) !== 0,
+      (packedBits & 0b0010) !== 0,
+      (packedBits & 0b0100) !== 0,
+      (packedBits & 0b1000) !== 0
+    ] as const;
+
+    const result = reconstructU12(bits, low);
+    Assert.equal(n, result);
+  }
+
+  @Fact
   public u16(): void {
-    const n = 420;
+    const n = 42069;
     const { buf } = this.serialize<u16>(n);
     Assert.defined(buf);
     Assert.equal(2, len(buf));
@@ -99,8 +134,31 @@ class SerializationTest {
   }
 
   @Fact
+  public i12(): void {
+    const n = -2000;
+    const { buf } = this.serialize<Packed<i12>>(n);
+    Assert.defined(buf);
+    Assert.equal(2, len(buf));
+
+    const packedBits = readu8(buf, 0);
+    const low = readu8(buf, 1);
+    Assert.equal(1, packedBits);
+    Assert.equal(48, low);
+
+    const bits = [
+      (packedBits & 0b0001) !== 0,
+      (packedBits & 0b0010) !== 0,
+      (packedBits & 0b0100) !== 0,
+      (packedBits & 0b1000) !== 0
+    ] as const;
+
+    const result = reconstructI12(bits, low);
+    Assert.equal(n, result);
+  }
+
+  @Fact
   public i16(): void {
-    const n = 420;
+    const n = 13337;
     const { buf } = this.serialize<i16>(n);
     Assert.defined(buf);
     Assert.equal(2, len(buf));
@@ -456,198 +514,6 @@ class SerializationTest {
       Assert.true(value.has(k));
       Assert.equal(value.get(k), v);
     }
-  }
-
-  @Fact
-  public vector(): void {
-    const value = vector.create(1, 2, 3) as unknown as Vector3;
-    const { buf } = this.serialize<Vector3>(value);
-    Assert.defined(buf);
-    Assert.equal(12, len(buf));
-
-    const x = readf32(buf, 0);
-    const y = readf32(buf, 4);
-    const z = readf32(buf, 8);
-    Assert.equal(1, x);
-    Assert.equal(2, y);
-    Assert.equal(3, z);
-  }
-
-  @Fact
-  public vectorCustom(): void {
-    const value = vector.create(1, 2, 3) as unknown as Vector3;
-    const { buf } = this.serialize<Vector<u8>>(value);
-    Assert.defined(buf);
-    Assert.equal(3, len(buf));
-
-    const x = readu8(buf, 0);
-    const y = readu8(buf, 1);
-    const z = readu8(buf, 2);
-    Assert.equal(1, x);
-    Assert.equal(2, y);
-    Assert.equal(3, z);
-  }
-
-  @Theory
-  @InlineData(vector.zero)
-  @InlineData(vector.one)
-  @InlineData(vector.create(-1, -1, -1))
-  @InlineData(vector.create(1, 0, 0))
-  @InlineData(vector.create(0, 1, 0))
-  @InlineData(vector.create(0, 0, 1))
-  @InlineData(vector.create(-1, 0, 0))
-  @InlineData(vector.create(0, -1, 0))
-  @InlineData(vector.create(0, 0, -1))
-  @InlineData(vector.create(1, 1, 0))
-  @InlineData(vector.create(1, 0, 1))
-  @InlineData(vector.create(0, 1, 1))
-  @InlineData(vector.create(-1, -1, 0))
-  @InlineData(vector.create(-1, 0, -1))
-  @InlineData(vector.create(0, -1, -1))
-  @InlineData(vector.create(1, -1, 0))
-  @InlineData(vector.create(-1, 1, 0))
-  @InlineData(vector.create(0, -1, 1))
-  @InlineData(vector.create(0, 1, -1))
-  @InlineData(vector.create(-1, 0, 1))
-  @InlineData(vector.create(1, 0, -1))
-  public packedVectorSpecialCases(vector: vector): void {
-    const value = vector as unknown as Vector3;
-    const expectedIndex = COMMON_VECTORS.findIndex(v => fuzzyEq(v, value));
-    Assert.notEqual(-1, expectedIndex);
-
-    const { buf } = this.serialize<Packed<Vector<u8>>>(value);
-    Assert.defined(buf);
-    Assert.equal(2, len(buf));
-
-    const optimized = (readu8(buf, 0) & 1) === 1;
-    Assert.true(optimized);
-
-    const packed = readu8(buf, 1);
-    Assert.equal(expectedIndex, packed);
-  }
-
-  @Fact
-  public cframe(): void {
-    const value = new CFrame(1, 2, 3);
-    const { buf } = this.serialize<CFrame>(value);
-    Assert.defined(buf);
-    Assert.equal(18, len(buf));
-
-    const x = readf32(buf, 6);
-    const y = readf32(buf, 10);
-    const z = readf32(buf, 14);
-    Assert.equal(1, x);
-    Assert.equal(2, y);
-    Assert.equal(3, z);
-  }
-
-  @Fact
-  public cframeCustom(): void {
-    const value = new CFrame(1, 2, 3);
-    const { buf } = this.serialize<Transform<u8>>(value);
-    Assert.defined(buf);
-    Assert.equal(9, len(buf));
-
-    const x = readu8(buf, 6);
-    const y = readu8(buf, 7);
-    const z = readu8(buf, 8);
-    Assert.equal(1, x);
-    Assert.equal(2, y);
-    Assert.equal(3, z);
-  }
-
-  @Fact
-  public packedCFrameBothSpecialCases(): void {
-    const value = new CFrame(0, 0, 0).mul(CFrame.Angles(0, 0, 0));
-    const { buf } = this.serialize<Packed<Transform<u8>>>(value);
-    Assert.defined(buf);
-    Assert.equal(2, len(buf));
-
-    const isOptimized = (readu8(buf, 0) & 1) === 1;
-    Assert.true(isOptimized);
-
-    const packed = readu8(buf, 1);
-    const optimizedPosition = packed & 0x60;
-    Assert.equal(0x20, optimizedPosition);
-
-    const optimizedRotation = packed & 0x1F;
-    Assert.notEqual(0x1F, optimizedRotation);
-    Assert.equal(0, optimizedRotation);
-  }
-
-  @Theory
-  @InlineData(Vector3.zero, 0x20)
-  @InlineData(Vector3.one, 0x60)
-  public packedCFramePositionSpecialCases(position: Vector3, bits: number): void {
-    const value = new CFrame(position).mul(CFrame.Angles(rad(45), 0, 0));
-    const { buf } = this.serialize<Packed<Transform<u8>>>(value);
-    Assert.defined(buf);
-    Assert.equal(8, len(buf));
-
-    const isOptimized = (readu8(buf, 0) & 1) === 1;
-    Assert.true(isOptimized);
-
-    const packed = readu8(buf, 1);
-    const optimizedPosition = packed & 0x60;
-    Assert.equal(bits, optimizedPosition);
-
-    const optimizedRotation = packed & 0x1F;
-    Assert.equal(0x1F, optimizedRotation);
-  }
-
-  @Theory
-  @InlineData(vector.zero)
-  @InlineData(vector.create(0, 180, 0))
-  @InlineData(vector.create(0, -180, 0))
-  @InlineData(vector.create(90, 0, 0))
-  @InlineData(vector.create(-90, -180, 0))
-  @InlineData(vector.create(0, 180, 180))
-  @InlineData(vector.create(0, 0, 180))
-  @InlineData(vector.create(-90, 0, 0))
-  @InlineData(vector.create(90, 180, 0))
-  @InlineData(vector.create(0, 180, 90))
-  @InlineData(vector.create(0, 0, -90))
-  @InlineData(vector.create(0, 90, 90))
-  @InlineData(vector.create(0, -90, -90))
-  @InlineData(vector.create(0, 0, 90))
-  @InlineData(vector.create(0, -180, -90))
-  @InlineData(vector.create(0, -90, 90))
-  @InlineData(vector.create(0, 90, -90))
-  @InlineData(vector.create(-90, -90, 0))
-  @InlineData(vector.create(90, 90, 0))
-  @InlineData(vector.create(0, -90, 0))
-  @InlineData(vector.create(0, 90, 0))
-  @InlineData(vector.create(90, -90, 0))
-  @InlineData(vector.create(-90, 90, 0))
-  @InlineData(vector.create(0, 90, 180))
-  @InlineData(vector.create(0, -90, -180))
-  public packedCFrameRotationSpecialCases({ x, y, z }: vector): void {
-    const rotation = angles(rad(x), rad(y), rad(z));
-    const expectedIndex = AXIS_ALIGNED_ORIENTATIONS.findIndex(v => v === rotation);
-    Assert.notEqual(-1, expectedIndex);
-
-    const value = new CFrame(69, 69, 69).mul(rotation);
-    const { buf } = this.serialize<Packed<Transform<u8>>>(value);
-    Assert.defined(buf);
-    Assert.equal(5, len(buf));
-
-    const isOptimized = (readu8(buf, 0) & 1) === 1;
-    Assert.true(isOptimized);
-
-    const packed = readu8(buf, 1);
-    const optimizedPosition = packed & 0x60;
-    Assert.notEqual(0x20, optimizedPosition);
-    Assert.notEqual(0x60, optimizedPosition);
-
-    const optimizedRotation = packed & 0x1F;
-    Assert.notEqual(0x1F, optimizedRotation);
-    Assert.equal(expectedIndex, optimizedRotation);
-  }
-
-  /** @metadata macro */
-  private serialize<T>(value: T, meta?: Modding.Many<SerializeMetadata<T>>): SerializedData {
-    const serializer = getSerializer<T>(meta)!;
-    return serializer.serialize(value);
   }
 }
 

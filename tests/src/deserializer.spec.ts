@@ -7,7 +7,7 @@ import {
   type TestMixedLiteralUnion, type TestTaggedUnion, type TestComplexUnion, type NullableLiteralUnion
 } from "./utility";
 import type {
-  u8, u16, u24, u32, i8, i16, i24, i32, f16, f24, f32, f64,
+  u8, u12, u16, u24, u32, i8, i12, i16, i24, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap, Vector,
   Transform,
   Packed
@@ -21,6 +21,13 @@ class DeserializationTest {
   public u8(): void {
     const n = 69;
     const result = this.deserialize<u8>(n);
+    Assert.equal(n, result);
+  }
+
+  @Fact
+  public u12(): void {
+    const n = 4000;
+    const result = this.deserialize<Packed<u12>>(n);
     Assert.equal(n, result);
   }
 
@@ -49,6 +56,13 @@ class DeserializationTest {
   public i8(): void {
     const n = -69;
     const result = this.deserialize<i8>(n);
+    Assert.equal(n, result);
+  }
+
+  @Fact
+  public i12(): void {
+    const n = -2000;
+    const result = this.deserialize<Packed<i12>>(n);
     Assert.equal(n, result);
   }
 

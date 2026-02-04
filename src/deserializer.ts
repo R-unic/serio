@@ -2,7 +2,9 @@ import { sizeOfNumberType, sign, CF__add } from "./utility";
 import { f24 } from "./utility/f24";
 import { f16 } from "./utility/f16";
 import { u24 } from "./utility/u24";
+import { u12 } from "./utility/u12";
 import { i24 } from "./utility/i24";
+import { i12 } from "./utility/i12";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS, IS_LUNE } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializedData, SerializerSchema } from "./types";
@@ -42,6 +44,10 @@ export function getDeserializeFunction<T>(
       case "u8":
         offset += 1;
         return readu8(buf, currentOffset);
+      case "u12":
+        offset += 1;
+        const u12Bits = [bits[bitIndex++], bits[bitIndex++], bits[bitIndex++], bits[bitIndex++]] as const;
+        return u12.read(buf, currentOffset, u12Bits);
       case "u16":
         offset += 2;
         return readu16(buf, currentOffset);
@@ -54,6 +60,10 @@ export function getDeserializeFunction<T>(
       case "i8":
         offset += 1;
         return readi8(buf, currentOffset);
+      case "i12":
+        offset += 1;
+        const i12Bits = [bits[bitIndex++], bits[bitIndex++], bits[bitIndex++], bits[bitIndex++]] as const;
+        return i12.read(buf, currentOffset, i12Bits);
       case "i16":
         offset += 2;
         return readi16(buf, currentOffset);

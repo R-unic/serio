@@ -2,13 +2,13 @@
 import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange, isNaN } from "./utility";
 import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
+import { u12 } from "./utility/u12";
 import { u24 } from "./utility/u24";
-import { i24 } from "./utility/i24";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
 
-const { min, max, clamp, ceil, map, pi: PI } = math;
+const { max, clamp, ceil, map, pi: PI } = math;
 const {
   copy, create: createBuffer, len: bufferLength,
   writei8, writei16, writei32, writeu8, writeu16, writeu32, writef32, writef64, writestring
@@ -54,17 +54,29 @@ export function getSerializeFunction<T>(
         writeu16(buf, currentOffset, value as never);
         break;
       }
-      case "u24": {
-        const bytes = u24.fromU32(value as never);
-        allocate(3);
-        writeu8(buf, currentOffset, bytes & 0xFF); // lower byte
-        writeu8(buf, currentOffset + 1, (bytes >> 8) & 0xFF); // middle byte
-        writeu8(buf, currentOffset + 2, (bytes >> 16) & 0xFF); // upper byte
-        break;
-      }
       case "u32": {
         allocate(4);
         writeu32(buf, currentOffset, value as never);
+        break;
+      }
+      case "u12":
+      case "i12": {
+        const numberBits = u12.fromU32(value as never);
+        allocate(1);
+        writeu8(buf, currentOffset, numberBits & 0xFF);
+        bits.push(((numberBits >> 11) & 1) === 1);
+        bits.push(((numberBits >> 10) & 1) === 1);
+        bits.push(((numberBits >> 9) & 1) === 1);
+        bits.push(((numberBits >> 8) & 1) === 1);
+        break;
+      }
+      case "u24":
+      case "i24": {
+        const numberBits = u24.fromU32(value as never);
+        allocate(3);
+        writei8(buf, currentOffset, numberBits & 0xFF); // lower byte
+        writei8(buf, currentOffset + 1, (numberBits >> 8) & 0xFF); // middle byte
+        writei8(buf, currentOffset + 2, (numberBits >> 16) & 0xFF); // upper byte
         break;
       }
       case "i8": {
@@ -75,14 +87,6 @@ export function getSerializeFunction<T>(
       case "i16": {
         allocate(2);
         writei16(buf, currentOffset, value as never);
-        break;
-      }
-      case "i24": {
-        const bytes = i24.fromI32(value as never);
-        allocate(3);
-        writei8(buf, currentOffset, bytes & 0xFF); // lower byte
-        writei8(buf, currentOffset + 1, (bytes >> 8) & 0xFF); // middle byte
-        writei8(buf, currentOffset + 2, (bytes >> 16) & 0xFF); // upper byte
         break;
       }
       case "i32": {
@@ -98,11 +102,11 @@ export function getSerializeFunction<T>(
         break;
       }
       case "f24": {
-        const bytes = f24.fromF32(value as never);
+        const numberBits = f24.fromF32(value as never);
         allocate(3);
-        writeu8(buf, currentOffset, bytes & 0xFF); // lower byte
-        writeu8(buf, currentOffset + 1, (bytes >> 8) & 0xFF); // middle byte
-        writeu8(buf, currentOffset + 2, (bytes >> 16) & 0xFF); // upper byte
+        writeu8(buf, currentOffset, numberBits & 0xFF); // lower byte
+        writeu8(buf, currentOffset + 1, (numberBits >> 8) & 0xFF); // middle byte
+        writeu8(buf, currentOffset + 2, (numberBits >> 16) & 0xFF); // upper byte
         break;
       }
       case "f32": {

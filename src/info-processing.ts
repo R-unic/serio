@@ -20,7 +20,7 @@ export interface ProcessedInfo {
 }
 
 const packing = (info: ProcessedInfo) => (info.flags & IterationFlags.Packed) !== 0;
-function addPackedBit(info: Writable<ProcessedInfo>): void {
+function addPackedBit(info: Writable<ProcessedInfo>, count = 1): void {
   if (!packing(info)) return;
   info.containsPacking = true;
 
@@ -28,7 +28,7 @@ function addPackedBit(info: Writable<ProcessedInfo>): void {
     info.containsUnknownPacking = true;
   else
     // We only keep track of guaranteed packing bits, which we can use for optimization.
-    info.minimumPackedBits++;
+    info.minimumPackedBits += count;
 }
 
 /**
@@ -45,6 +45,15 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
   const [kind] = schema;
 
   switch (kind) {
+    case "u12":
+    case "i12": {
+      if (!packing(info)) {
+        throw `[@rbxts/serio]: 12-bit types may not be used without packing!`;
+      }
+
+      addPackedBit(info, 4);
+      break;
+    }
     case "optional": {
       addPackedBit(info);
       info.flags |= IterationFlags.SizeUnknown;

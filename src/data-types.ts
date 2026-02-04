@@ -1,4 +1,4 @@
-import type { AnySize } from "./types";
+import type { USize } from "./types";
 
 type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
 export type StripMeta<T, Depth extends number = 32> =
@@ -78,10 +78,12 @@ type StripMetaStep<T, Depth extends number> =
   : T;
 
 export type u8 = number & { readonly _u8?: never };
+export type u12 = number & { readonly _u12?: never };
 export type u16 = number & { readonly _u16?: never };
 export type u24 = number & { readonly _u24?: never };
 export type u32 = number & { readonly _u32?: never };
 export type i8 = number & { readonly _i8?: never };
+export type i12 = number & { readonly _i12?: never };
 export type i16 = number & { readonly _i16?: never };
 export type i24 = number & { readonly _i24?: never };
 export type i32 = number & { readonly _i32?: never };
@@ -90,7 +92,7 @@ export type f24 = number & { readonly _f24?: never };
 export type f32 = number & { readonly _f32?: never };
 export type f64 = number & { readonly _f64?: never };
 
-export type String<LengthType extends AnySize = u32> = string & { readonly _string?: [LengthType] };
+export type String<LengthType extends USize = u32> = string & { readonly _string?: [LengthType] };
 
 /** UDim */
 export type ScaleOffset<
@@ -121,19 +123,19 @@ export type Transform<
 > = CFrame & { readonly _cf?: [X, Y, Z] };
 
 /** T[] */
-export type List<T, LengthType extends AnySize = u32> =
+export type List<T, LengthType extends USize = u32> =
   T[] & { readonly _list?: [T, LengthType] };
 
 /** [A, B, C] */
-export type Tuple<T extends unknown[], LengthType extends AnySize = u32> =
+export type Tuple<T extends unknown[], LengthType extends USize = u32> =
   T & { readonly _tuple?: [T, LengthType] };
 
 /** Set<T> */
-export type HashSet<T, LengthType extends AnySize = u32> =
+export type HashSet<T, LengthType extends USize = u32> =
   Set<T> & { readonly _set?: [T, LengthType] };
 
 /** Map<K, V> */
-export type HashMap<K, V, LengthType extends AnySize = u32> =
+export type HashMap<K, V, LengthType extends USize = u32> =
   Map<K, V> & { readonly _map?: [K, V, LengthType] };
 
 /** Bitpacks all descendant fields */

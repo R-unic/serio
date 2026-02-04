@@ -11,12 +11,12 @@ export function assertNumberRange(n: number, sizeInBytes: number, signed: boolea
   const signedOffset = signed ? 1 : 0;
   const integerBits = sizeInBits - signedOffset;
   const maximum = 2 ** integerBits - 1;
-  const minimum = signed ? -maximum - 1 : 0;
+  const minimum = signed ? -(1 + maximum) : 0;
 
   if (n >= minimum && n <= maximum) return;
   throw `[@rbxts/serio]: Attempt to serialize value out of bit range${note !== undefined ? ` (${note})` : ""}
     Value: ${n}
-    Size: ${sizeInBytes}
+    Size (bits): ${sizeInBits}
     Signed: ${signed}`;
 }
 
@@ -50,6 +50,7 @@ export function getSortedEnumItems(enumObject: Enum): EnumItem[] {
 
 const numberTypeSizes: Record<NumberType, number> = {
   u8: 1, i8: 1,
+  u12: 1.5, i12: 1.5,
   u16: 2, i16: 2, f16: 2,
   u24: 3, i24: 3, f24: 3,
   u32: 4, i32: 4, f32: 4,

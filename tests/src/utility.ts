@@ -1,7 +1,7 @@
 import type { Modding } from "@flamework/core";
 import { Assert } from "@rbxts/runit";
 
-import type { Serializer, SerializerMetadata, u8, i32, String, Vector, u16 } from "../src/index";
+import type { Serializer, SerializerMetadata, SerializedData, String, Vector, u8, i32, u16 } from "../src/index";
 import createSerializer from "../src/index";
 
 export type NullableLiteralUnion = TestLiteralUnion | undefined;
@@ -104,4 +104,12 @@ export function assertVectorEqual(expected: Vector3, actual: Vector3): void {
   Assert.equal(expected.X, actual.X);
   Assert.equal(expected.Y, actual.Y);
   Assert.equal(expected.Z, actual.Z);
+}
+
+export class BaseSerializationTest {
+  /** @metadata macro */
+  protected serialize<T>(value: T, meta?: Modding.Many<SerializeMetadata<T>>): SerializedData {
+    const serializer = getSerializer<T>(meta)!;
+    return serializer.serialize(value);
+  }
 }

@@ -1,4 +1,4 @@
-import type { u8, u16, u24, u32 } from "./data-types";
+import type { u8, u16, u24, u32, u12 } from "./data-types";
 
 export interface SerializedData {
   readonly buf?: buffer;
@@ -6,7 +6,7 @@ export interface SerializedData {
 }
 
 export type Modifiers = "optional" | "packed";
-export type IntType = "i8" | "i16" | "i24" | "i32" | "u8" | "u16" | "u24" | "u32";
+export type IntType = "i8" | "i12" | "i16" | "i24" | "i32" | "u8" | "u12" | "u16" | "u24" | "u32";
 export type FloatType = "f16" | "f24" | "f32" | "f64";
 export type NumberType = IntType | FloatType;
 
@@ -17,7 +17,7 @@ export type PrimitiveDataType =
   | "colorsequence"
   | "numbersequence"
 
-export type AnySize = u8 | u16 | u24 | u32;
+export type USize = u8 | u12 | u16 | u24 | u32;
 export type Primitive<T extends PrimitiveDataType = PrimitiveDataType> = [T];
 export type SerializerSchema =
   | Primitive
