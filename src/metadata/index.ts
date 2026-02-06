@@ -37,8 +37,15 @@ type ArrayMetadata<T extends unknown[]> = [T] extends [{ length: number }]
   ? TupleMetadata<T>
   : ListMetadata<T>;
 
+type IsExactlyBoolean<T> =
+  [T] extends [boolean]
+  ? ([boolean] extends [T] ? true : false)
+  : false;
+
 export type SerializerMetadata<T> =
-  IsLiteralUnion<T> extends true
+  IsExactlyBoolean<T> extends true
+  ? ["bool"]
+  : IsLiteralUnion<T> extends true
   ? ["literal", NonNullable<T>[], true extends IsUnion<T> ? (undefined extends T ? 1 : 0) : -1]
   : unknown extends T
   ? ["optional", ["blob"]]
@@ -46,6 +53,8 @@ export type SerializerMetadata<T> =
   ? ["packed", SerializerMetadata<V>]
   : undefined extends T
   ? ["optional", SerializerMetadata<NonNullable<T>>]
+  : defined extends T
+  ? ["blob"]
   : [T] extends [{ readonly _f64?: never }]
   ? ["f64"]
   : [T] extends [{ readonly _f32?: never }]
