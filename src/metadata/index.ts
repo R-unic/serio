@@ -2,7 +2,7 @@ import type { Modding } from "@flamework/core";
 
 import type { FindDiscriminator, HasNominal, HasSingularObjectConstituent, IsDiscriminableUnion, IsLiteralUnion, IsTableObject, IsUnion } from "./unions";
 import type { HasRest, RestType, SplitRest } from "./tuples";
-import type { StripMeta, f32, u16, u32 } from "../data-types";
+import type { StripMeta, f32, u16, u32, u8 } from "../data-types";
 
 type GetEnumType<T> = [T] extends [EnumItem] ? ExtractKeys<Enums, T["EnumType"]> : never;
 
@@ -53,10 +53,10 @@ export type SerializerMetadata<T> =
   ? ["packed", SerializerMetadata<V>]
   : undefined extends T
   ? ["optional", SerializerMetadata<NonNullable<T>>]
-  : defined extends T
+  : keyof T extends never
   ? ["blob"]
   : [T] extends [{ readonly _f64?: never }]
-  ? ["f64"]
+  ? ["f64"] // u4
   : [T] extends [{ readonly _f32?: never }]
   ? ["f32"]
   : [T] extends [{ readonly _f24?: never }]

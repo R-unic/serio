@@ -200,7 +200,7 @@ class DeserializationTest {
   public complexUnions(value: TestComplexUnion): void {
     const result = this.deserialize<TestComplexUnion>(value);
     if (typeIs(value, "Vector3")) {
-      Assert.isCheckableType(result, "vector");
+      Assert.isCheckableType(result, "Vector3");
 
       const v = result as Vector3;
       Assert.equal(value.X, v.X);
