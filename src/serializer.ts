@@ -97,8 +97,7 @@ export function getSerializeFunction<T>(
       case "f16": {
         const bytes = f16.fromF32(value as never);
         allocate(2);
-        writeu8(buf, currentOffset, bytes & 0xFF); // lower byte
-        writeu8(buf, currentOffset + 1, (bytes >> 8) & 0xFF); // upper byte
+        writeu16(buf, currentOffset, bytes);
         break;
       }
       case "f24": {
@@ -503,6 +502,10 @@ export function getSerializeFunction<T>(
 
   function validate(value: unknown, [kind]: SerializerSchema): void {
     if (isNumberType(kind)) {
+      if (value !== value) {
+        throw `[@rbxts/serio]: Attempt to serialize NaN value as "${kind}"`;
+      }
+
       const size = sizeOfNumberType(kind);
       const isSigned = kind.sub(1, 1) !== "u";
       assertNumberRange(value as number, size, isSigned);

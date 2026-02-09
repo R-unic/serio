@@ -33,7 +33,8 @@ type ListMetadata<T extends unknown[]> =
   ? ["list", SerializerMetadata<V>, SerializerMetadata<Size>]
   : ["list", SerializerMetadata<T[number]>, SerializerMetadata<u32>];
 
-type ArrayMetadata<T extends unknown[]> = [T] extends [{ length: number }]
+type ArrayMetadata<T extends unknown[]> =
+  [T] extends [{ length: number }]
   ? TupleMetadata<T>
   : ListMetadata<T>;
 
@@ -56,7 +57,7 @@ export type SerializerMetadata<T> =
   : keyof T extends never
   ? ["blob"]
   : [T] extends [{ readonly _f64?: never }]
-  ? ["f64"] // u4
+  ? ["f64"]
   : [T] extends [{ readonly _f32?: never }]
   ? ["f32"]
   : [T] extends [{ readonly _f24?: never }]

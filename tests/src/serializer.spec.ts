@@ -56,6 +56,11 @@ class SerializationTest extends BaseSerializationTest {
   }
 
   @Fact
+  public throwsWhenNaN(): void {
+    Assert.throws(() => this.serialize<number>(0 / 0), "[@rbxts/serio]: Attempt to serialize NaN value as \"f32\"");
+  }
+
+  @Fact
   public u8(): void {
     const n = 69;
     const { buf } = this.serialize<u8>(n);
