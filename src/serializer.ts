@@ -7,6 +7,7 @@ import { u24 } from "./utility/u24";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
+import { f8 } from "./utility/f8";
 
 const { max, clamp, ceil, map, pi: PI } = math;
 const {
@@ -92,6 +93,12 @@ export function getSerializeFunction<T>(
       case "i32": {
         allocate(4);
         writei32(buf, currentOffset, value as never);
+        break;
+      }
+      case "f8": {
+        const bytes = f8.fromF32(value as never);
+        allocate(1);
+        writeu8(buf, currentOffset, bytes);
         break;
       }
       case "f16": {

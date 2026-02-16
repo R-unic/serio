@@ -8,6 +8,7 @@ import { i12 } from "./utility/i12";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS, IS_LUNE } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializedData, SerializerSchema } from "./types";
+import { f8 } from "./utility/f8";
 
 const { ceil, map, pi: PI } = math;
 const { create: createVector } = vector;
@@ -73,6 +74,9 @@ export function getDeserializeFunction<T>(
       case "i32":
         offset += 4;
         return readi32(buf, currentOffset);
+      case "f8":
+        offset += 1;
+        return f8.read(buf, currentOffset);
       case "f16":
         offset += 2;
         return f16.read(buf, currentOffset);

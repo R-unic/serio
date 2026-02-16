@@ -10,7 +10,8 @@ import type {
   u8, u12, u16, u24, u32, i8, i12, i16, i24, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap, Vector,
   Transform,
-  Packed
+  Packed,
+  f8
 } from "../src/index";
 
 const angles = CFrame.Angles;
@@ -85,6 +86,20 @@ class DeserializationTest {
     const n = -69_420_420;
     const result = this.deserialize<i32>(n);
     Assert.equal(n, result);
+  }
+
+  @Fact
+  public f8(): void {
+    const n = 69.42;
+    const result = this.deserialize<f8>(n);
+    Assert.fuzzyEqual(n, result, 3);
+  }
+
+  @Fact
+  public f8Negative(): void {
+    const n = -69.42;
+    const result = this.deserialize<f8>(n);
+    Assert.fuzzyEqual(n, result, 3);
   }
 
   @Fact

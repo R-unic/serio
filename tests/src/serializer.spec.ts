@@ -5,12 +5,14 @@ import { u24 as u24Utility } from "../../src/utility/u24";
 import { i24 as i24Utility } from "../../src/utility/i24";
 import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
+import { f8 as f8Utility } from "../../src/utility/f8";
 import {
   BaseSerializationTest, type TestLiteralUnion, type TestObject, type TestPackedBooleans
 } from "./utility";
 import type {
   u8, u12, u16, u24, u32, i8, i12, i16, i24, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap, Packed,
+  f8,
 } from "../src/index";
 import type { NumberType } from "../src/types";
 
@@ -46,6 +48,7 @@ class SerializationTest extends BaseSerializationTest {
   @InlineData(2 ** 32, "u32")
   @InlineData(-1, "u32")
   @InlineData(-(2 ** 32), "i32")
+  @InlineData(2 ** 16, "f8")
   @InlineData(2 ** 16, "f16")
   @InlineData(2 ** 24, "f24")
   public throwsWhenOutOfRange(n: number, kind: NumberType): void {
@@ -199,6 +202,17 @@ class SerializationTest extends BaseSerializationTest {
 
     const result = readi32(buf, 0);
     Assert.equal(n, result);
+  }
+
+  @Fact
+  public f8(): void {
+    const n = 69.42;
+    const { buf } = this.serialize<f8>(n);
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+
+    const result = f8Utility.read(buf, 0);
+    Assert.fuzzyEqual(n, result, 3);
   }
 
   @Fact

@@ -64,6 +64,8 @@ export type SerializerMetadata<T> =
   ? ["f24"]
   : [T] extends [{ readonly _f16?: never }]
   ? ["f16"]
+  : [T] extends [{ readonly _f8?: never }]
+  ? ["f8"]
   : [T] extends [{ readonly _u8?: never }]
   ? ["u8"]
   : [T] extends [{ readonly _u16?: never }]

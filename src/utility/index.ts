@@ -49,7 +49,7 @@ export function getSortedEnumItems(enumObject: Enum): EnumItem[] {
 }
 
 const numberTypeSizes: Record<NumberType, number> = {
-  u8: 1, i8: 1,
+  u8: 1, i8: 1, f8: 1,
   u12: 1.5, i12: 1.5,
   u16: 2, i16: 2, f16: 2,
   u24: 3, i24: 3, f24: 3,

@@ -87,6 +87,7 @@ export type i12 = number & { readonly _i12?: never };
 export type i16 = number & { readonly _i16?: never };
 export type i24 = number & { readonly _i24?: never };
 export type i32 = number & { readonly _i32?: never };
+export type f8 = number & { readonly _f8?: never };
 export type f16 = number & { readonly _f16?: never };
 export type f24 = number & { readonly _f24?: never };
 export type f32 = number & { readonly _f32?: never };

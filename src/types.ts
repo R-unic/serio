@@ -7,7 +7,7 @@ export interface SerializedData {
 
 export type Modifiers = "optional" | "packed";
 export type IntType = "i8" | "i12" | "i16" | "i24" | "i32" | "u8" | "u12" | "u16" | "u24" | "u32";
-export type FloatType = "f16" | "f24" | "f32" | "f64";
+export type FloatType = "f8" | "f16" | "f24" | "f32" | "f64";
 export type NumberType = IntType | FloatType;
 
 export type PrimitiveDataType =
