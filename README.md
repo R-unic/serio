@@ -49,18 +49,21 @@ Serio automatically asserts that inputs are within the bounds of their respectiv
 
 ### Extended Support
 
-Serio supports data types that are not natively supported by the `buffer` library or Roblox. Currently the only examples of this are `f24`,`f16`, `u12`, `u24`, `i12` and `i24`. 12-bit types are not allowed without using packing as they occupy individual bits and require packing.
+Serio supports data types that are not natively supported by the `buffer` library or Roblox. Currently the only examples of this are `f24`,`f16`, `f8`, `u12`, `u24`, `i12` and `i24`. 12-bit types are not allowed without using packing as they occupy individual bits and require packing.
+
+Note: Floating point values with low bit counts like f8 and f16 can produce pretty inaccurate results. Use with caution.
 
 ```ts
-import type { f16, f24, u12, u24, i12, i24 } from "@rbxts/serio";
+import type { f8, f16, f24, u12, u24, i12, i24 } from "@rbxts/serio";
 
 interface CoolTypes {
-  readonly a: f16;
-  readonly b: f24;
-  readonly c: u12;
-  readonly d: u24;
-  readonly e: i12;
-  readonly f: i24;
+  readonly a: f8;
+  readonly b: f16;
+  readonly c: f24;
+  readonly d: u12;
+  readonly e: u24;
+  readonly f: i12;
+  readonly g: i24;
 }
 ```
 
