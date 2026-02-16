@@ -95,6 +95,13 @@ class SerializationTest extends BaseSerializationTest {
   }
 
   @Fact
+  public u12Packing(): void {
+    const { buf } = this.serialize<Packed<{ a: u12, b: u12 }>>({ a: 4000, b: 69 });
+    Assert.defined(buf);
+    Assert.equal(3, len(buf));
+  }
+
+  @Fact
   public u16(): void {
     const n = 42069;
     const { buf } = this.serialize<u16>(n);
