@@ -14,6 +14,12 @@ export class Serializer<T> {
     this.serialize = getSerializeFunction(info);
     this.deserialize = getDeserializeFunction(info);
   }
+
+  /** @metadata macro */
+  public getSchema(meta?: Modding.Many<SerializerMetadata<T>>): SerializerMetadata<T> {
+    assert(meta !== undefined);
+    return meta;
+  }
 }
 
 export * from "./data-types";
