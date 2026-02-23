@@ -1,5 +1,6 @@
 
 import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange, isNaN } from "./utility";
+import { f8 } from "./utility/f8";
 import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
 import { u12 } from "./utility/u12";
@@ -7,8 +8,8 @@ import { u24 } from "./utility/u24";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
-import { f8 } from "./utility/f8";
 
+const { sub } = string;
 const { max, clamp, ceil, map, pi: PI } = math;
 const {
   copy, create: createBuffer, len: bufferLength,
@@ -18,6 +19,17 @@ const toAxisAngle = CFrame.identity.ToAxisAngle as (cf: CFrame) => ReturnType<CF
 
 const LIMIT_16_BITS = 2 ** 16 - 1;
 const LIMIT_15_BITS = 2 ** 15 - 1;
+
+function validateIfNumber(value: unknown, [kind]: SerializerSchema): void {
+  if (!isNumberType(kind)) return;
+  if (value !== value) {
+    throw `[@rbxts/serio]: Attempt to serialize NaN value as "${kind}"`;
+  }
+
+  const size = sizeOfNumberType(kind);
+  const isSigned = sub(kind, 1, 1) !== "u";
+  assertNumberRange(value as number, size, isSigned);
+}
 
 export function getSerializeFunction<T>(
   { schema, containsPacking, containsUnknownPacking, minimumPackedBits, minimumPackedBytes, sortedEnums }: ProcessedInfo
@@ -42,9 +54,10 @@ export function getSerializeFunction<T>(
 
   function serialize(value: unknown, meta: SerializerSchema, serializeOffset = offset): void {
     const currentOffset = serializeOffset;
-    validate(value, meta);
+    validateIfNumber(value, meta);
 
-    switch (meta[0]) {
+    const [typeName] = meta;
+    switch (typeName) {
       case "u8": {
         allocate(1);
         writeu8(buf, currentOffset, value as never);
@@ -181,15 +194,21 @@ export function getSerializeFunction<T>(
         const keypoints = (value as NumberSequence).Keypoints;
         const keypointCount = keypoints.size();
         assertNumberRange(keypointCount, 1, false, "number sequence keypoints length");
-        allocate(1 + keypointCount * 6);
+        allocate(1 + 6 * keypointCount);
         writeu8(buf, currentOffset, keypointCount);
 
         for (const i of $range(1, keypointCount)) {
-          const keypointOffset = currentOffset + 1 + 6 * (i - 1);
+          const keypointOffset = 1 + currentOffset + 6 * (i - 1);
           const keypoint = keypoints[i - 1];
-          writeu16(buf, keypointOffset, keypoint.Time * 0xFFFF);
-          writeu16(buf, keypointOffset + 2, keypoint.Value * 0xFFFF);
-          writeu16(buf, keypointOffset + 4, keypoint.Envelope * 0xFFFF);
+          const time = 0xFFFF * keypoint.Time;
+          const value = 0xFFFF * keypoint.Value;
+          const envelope = 0xFFFF * keypoint.Envelope;
+          assertNumberRange(time, 2, false, `number sequence keypoint #${i} time`);
+          assertNumberRange(value, 2, false, `number sequence keypoint #${i} value`);
+          assertNumberRange(envelope, 2, false, `number sequence keypoint #${i} envelope`);
+          writeu16(buf, keypointOffset, time);
+          writeu16(buf, 2 + keypointOffset, value);
+          writeu16(buf, 4 + keypointOffset, envelope);
         }
 
         break;
@@ -202,20 +221,28 @@ export function getSerializeFunction<T>(
         writeu8(buf, currentOffset, keypointCount);
 
         for (const i of $range(1, keypointCount)) {
-          const keypointOffset = currentOffset + 1 + 5 * (i - 1);
+          const keypointOffset = 1 + currentOffset + 5 * (i - 1);
           const keypoint = keypoints[i - 1];
-          writeu16(buf, keypointOffset, keypoint.Time * 0xFFFF);
-          serialize(keypoint.Value, ["color"], keypointOffset + 2);
+          const time = 0xFFFF * keypoint.Time;
+          assertNumberRange(time, 2, false, `color sequence keypoint #${i} time`);
+          writeu16(buf, keypointOffset, time);
+          serialize(keypoint.Value, ["color"], 2 + keypointOffset);
         }
 
         break;
       }
       case "color": {
         const color = value as Color3;
+        const r = 0xFF * color.R;
+        const g = 0xFF * color.G;
+        const b = 0xFF * color.B;
+        assertNumberRange(r, 1, false, "color R value");
+        assertNumberRange(g, 1, false, "color G value");
+        assertNumberRange(b, 1, false, "color B value");
         allocate(3);
-        writeu8(buf, currentOffset, color.R * 0xFF);
-        writeu8(buf, currentOffset + 1, color.G * 0xFF);
-        writeu8(buf, currentOffset + 2, color.B * 0xFF);
+        writeu8(buf, currentOffset, r);
+        writeu8(buf, 1 + currentOffset, g);
+        writeu8(buf, 2 + currentOffset, b);
         break;
       }
       case "udim": {
@@ -367,24 +394,25 @@ export function getSerializeFunction<T>(
           assertNumberRange(tagIndex, 2, false, "literal union tag index");
           allocate(2);
           writeu16(buf, currentOffset, tagIndex);
-        } else if (byteSize === -1)
+        } else if (byteSize === -1) {
           bits.push(tagIndex === 0);
+        }
 
         serialize(value, tagMetadata);
         break;
       }
       case "guard_union": {
         const constituents = meta[1];
-
         let serializerIndex: number | undefined;
         let serializer!: SerializerSchema;
+
         for (const i of $range(1, constituents.size())) {
           // Flamework can't generate "any table" guards so it gets replaced with nil
           const constituent = constituents[i - 1];
-          const guard = constituent[1];
+          const [potentialSerializer, guard] = constituent;
           if (guard ? guard(value) : typeIs(value, "table")) {
             serializerIndex = i - 1;
-            serializer = constituent[0];
+            serializer = potentialSerializer;
           }
         }
 
@@ -393,9 +421,9 @@ export function getSerializeFunction<T>(
           Stemmed from: ${originalValue}`;
 
         // Supports 256 unions for the time being.
+        assertNumberRange(serializerIndex, 1, false, "literal guard union serializer index");
         allocate(1);
-        buffer.writeu8(buf, currentOffset, serializerIndex);
-
+        writeu8(buf, currentOffset, serializerIndex);
         serialize(value, serializer);
         break;
       }
@@ -505,18 +533,6 @@ export function getSerializeFunction<T>(
     writeu16(buf, offset, mappedX);
     writei16(buf, offset + 2, mappedY);
     writeu16(buf, offset + 4, mappedAngle);
-  }
-
-  function validate(value: unknown, [kind]: SerializerSchema): void {
-    if (isNumberType(kind)) {
-      if (value !== value) {
-        throw `[@rbxts/serio]: Attempt to serialize NaN value as "${kind}"`;
-      }
-
-      const size = sizeOfNumberType(kind);
-      const isSigned = kind.sub(1, 1) !== "u";
-      assertNumberRange(value as number, size, isSigned);
-    }
   }
 
   function writeBits(buf: buffer, offset: number, bitOffset: number, byteCount: number, variable: boolean): void {
