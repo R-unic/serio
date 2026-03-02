@@ -7,7 +7,7 @@ import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
 import { f8 as f8Utility } from "../../src/utility/f8";
 import {
-  BaseSerializationTest, type TestLiteralUnion, type TestObject, type TestPackedBooleans
+  BaseSerializationTest, TestTaggedUnion, type TestLiteralUnion, type TestObject, type TestPackedBooleans
 } from "./utility";
 import type {
   u8, u12, u16, u24, u32, i8, i12, i16, i24, i32, f16, f24, f32, f64,
@@ -313,6 +313,22 @@ class SerializationTest extends BaseSerializationTest {
     const index = readu8(buf, 0);
     Assert.equal(expectedIndex, index);
     Assert.equal(value, members[index]);
+  }
+
+  @Theory
+  @InlineData({ tag: "a", value: 69 }, 0, 1)
+  @InlineData({ tag: "b", value: "foo" }, 1, 4)
+  public taggedUnions(union: TestTaggedUnion, expectedIndex: number, extraSize: number): void {
+    const members = deunify<TestTaggedUnion["tag"]>();
+    const { buf } = this.serialize<TestTaggedUnion>(union);
+    Assert.defined(buf);
+    Assert.equal(1 + extraSize, len(buf));
+
+    const index = readu8(buf, 0);
+    const value = union.tag === "a" ? readu8(buf, 1) : readstring(buf, 2, extraSize - 1);
+    Assert.equal(expectedIndex, index);
+    Assert.equal(union.tag, members[index]);
+    Assert.equal(union.value, value);
   }
 
   @Theory

@@ -54,8 +54,6 @@ export type SerializerMetadata<T> =
   ? ["packed", SerializerMetadata<V>]
   : undefined extends T
   ? ["optional", SerializerMetadata<NonNullable<T>>]
-  : keyof T extends never
-  ? ["blob"]
   : [T] extends [{ readonly _f64?: never }]
   ? ["f64"]
   : [T] extends [{ readonly _f32?: never }]
@@ -146,7 +144,7 @@ export type SerializerMetadata<T> =
       : never)[],
   ]
   : true extends HasNominal<keyof T>
-  ? ["blob"]
+  ? ["blobballs"]
   : T extends object
   ? [
     "object_raw",
@@ -154,4 +152,4 @@ export type SerializerMetadata<T> =
       [K in keyof T]-?: [K, SerializerMetadata<T[K]>];
     }[keyof T][],
   ]
-  : ["blob"];
+  : ["blobnutz"];
