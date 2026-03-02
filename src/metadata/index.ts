@@ -149,7 +149,7 @@ export type SerializerMetadata<T> =
   ? ["blob"]
   : T extends object
   ? [
-    "object",
+    "object_raw",
     {
       [K in keyof T]-?: [K, SerializerMetadata<T[K]>];
     }[keyof T][],

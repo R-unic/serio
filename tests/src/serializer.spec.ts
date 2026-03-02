@@ -393,8 +393,8 @@ class SerializationTest extends BaseSerializationTest {
     const value: TestPackedBooleans = { a: true, b: false, c: true, d: false, e: true, f: false, g: true, h: false };
     const { buf } = this.serialize<Packed<TestPackedBooleans>>(value, {
       // this is to guarantee the order of the fields
-      text: "Packed<Schema>",
-      serializerMeta: ["packed", ["object", [
+      text: "Packed<TestPackedBooleans>",
+      serializerMeta: ["packed", ["object_raw", [
         ["a", ["bool"]],
         ["b", ["bool"]],
         ["c", ["bool"]],

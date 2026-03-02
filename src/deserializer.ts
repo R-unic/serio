@@ -237,10 +237,12 @@ export function getDeserializeFunction<T>(
         return list
       }
       case "object": {
-        const [_, fields] = meta;
-        const object: Record<string, unknown> = {};
-        for (const [name, fieldMeta] of fields)
-          object[name] = deserialize(fieldMeta);
+        const [_, elements, preallocation] = meta;
+        const object = table.clone(preallocation);
+        for (const i of $range(1, elements.size(), 2)) {
+          const key = elements[i - 1] as string;
+          object.set(key, deserialize(elements[i] as SerializerSchema));
+        }
 
         return object;
       }

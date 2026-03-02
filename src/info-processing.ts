@@ -4,9 +4,9 @@ import { getSortedEnumItems } from "./utility";
 const { max, ceil } = math;
 
 const enum IterationFlags {
-  Default,
-  SizeUnknown,
-  Packed
+  Default = 0,
+  SizeUnknown = 1 << 0,
+  Packed = 1 << 1
 }
 
 export interface ProcessedInfo {
@@ -45,6 +45,20 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
   const [kind] = schema;
 
   switch (kind) {
+    case "object_raw": {
+      // We transform objects as an array of tuples, but this is slow to iterate over.
+      // We flatten the raw generated metadata into a single array, which can be iterated much quicker.
+      // We also create a preallocated object that we can clone as we already know the structure ahead of time.
+      const preallocation = new Map<unknown, unknown>;
+      const transformed: (string | SerializerSchema)[] = [];
+      for (const [key, meta] of schema[1]) {
+        transformed.push(key, schemaPass(meta, info));
+        preallocation.set(key, true);
+      }
+
+      schema = ["object", transformed, preallocation];
+      break;
+    }
     case "u12":
     case "i12": {
       if (!packing(info)) {
@@ -113,12 +127,6 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
         : (size + possibleValuesSize > 256 ? 2 : 1);
 
       schema = [kind, possibleValues, finalSize];
-      break;
-    }
-    case "object": {
-      const [_, fields] = schema;
-      const newFields = fields.map<(typeof fields)[number]>(([name, meta]) => [name, schemaPass(meta, info)]);
-      schema = ["object", newFields];
       break;
     }
     case "udim2":

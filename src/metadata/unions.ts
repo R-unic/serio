@@ -1,3 +1,5 @@
+// This type allows us to detect types like `number & Marker` or `15 & Marker` correctly,
+// by mapping the object portion of `T` onto `V`.
 type Mask<V, T> = T extends object ? V & Reconstruct<T> : V;
 
 type IsLiteral<T> = T extends undefined

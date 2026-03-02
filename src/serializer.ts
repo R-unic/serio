@@ -363,11 +363,14 @@ export function getSerializeFunction<T>(
         break;
       }
       case "object": {
-        const [_, fields] = meta;
+        const [_, elements] = meta;
         const object = value as Record<string, unknown>;
 
-        for (const [name, schema] of fields)
-          serialize(object[name], schema);
+        for (const i of $range(1, elements.size(), 2)) {
+          const key = elements[i - 1] as string;
+          const schema = elements[i] as SerializerSchema;
+          serialize(object[key], schema);
+        }
 
         break;
       }
@@ -535,18 +538,17 @@ export function getSerializeFunction<T>(
     writeu16(buf, offset + 4, mappedAngle);
   }
 
-  function writeBits(buf: buffer, offset: number, bitOffset: number, byteCount: number, variable: boolean): void {
+  function writeBits(buf: buffer, offset: number, bitOffset: number, bytes: number, variable: boolean): void {
     const bitSize = bits.size();
-    for (const i of $range(0, byteCount - 1)) {
+    for (const byte of $range(0, bytes - 1)) {
       let currentByte = 0;
-      const remainingBits = bitSize - bitOffset;
-      const bitsThisByte = clamp(remainingBits, 0, 7);
+      const bitsThisByte = clamp(bitSize - bitOffset, 0, 7);
       for (const bit of $range(variable ? 1 : 0, bitsThisByte)) {
         currentByte += (bits[bitOffset] ? 1 : 0) << bit;
         bitOffset++;
       }
 
-      if (variable && i !== byteCount - 1)
+      if (variable && byte !== bytes - 1)
         currentByte++;
 
       writeu8(buf, offset, currentByte);
@@ -559,9 +561,9 @@ export function getSerializeFunction<T>(
     if (!containsUnknownPacking)
       return $tuple(minimumBytes, 0, minimumBytes);
 
-    const variableBytes = max(1, ceil((bits.size() - minimumBytes * 8) / 7));
-    const totalByteCount = minimumBytes + variableBytes;
-    return $tuple(minimumBytes, variableBytes, totalByteCount);
+    const variableBytes = max(1, ceil((bits.size() - 8 * minimumBytes) / 7));
+    const totalBytes = minimumBytes + variableBytes;
+    return $tuple(minimumBytes, variableBytes, totalBytes);
   }
 
   return (value: T) => {
@@ -586,7 +588,7 @@ export function getSerializeFunction<T>(
       writeBits(trimmed, 0, 0, minimumBytes, false);
 
     if (variableBytes > 0)
-      writeBits(trimmed, minimumBytes, minimumBytes * 8, variableBytes, true);
+      writeBits(trimmed, minimumBytes, 8 * minimumBytes, variableBytes, true);
 
     return createSerializedData(trimmed, blobs);
   };
