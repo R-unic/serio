@@ -76,8 +76,8 @@ import type { List, String, HashSet, HashMap, Tuple, Vector, ScaleOffset, ScaleO
 
 interface Example {
   // serialize the length of the array/string/tuple/set/map as a u8, allowing a maximum of 255 elements (which most collections are under anyways)
-  list: List<string, u8>;
   string: String<u8>;
+  list: List<string, u8>;
   set: HashSet<"a" | "b" | "c", u8>;
   map: HashMap<string, i8, u8>;
   tuple: Tuple<[boolean, u8, string], u8>;
