@@ -2,7 +2,7 @@ import type { Modding } from "@flamework/core";
 
 import type { FindDiscriminator, HasNominal, HasSingularObjectConstituent, IsDiscriminableUnion, IsLiteralUnion, IsTableObject, IsUnion } from "./unions";
 import type { HasRest, RestType, SplitRest } from "./tuples";
-import type { StripMeta, f32, u16, u32, u8 } from "../data-types";
+import type { StripMeta, f32, u16, u32 } from "../data-types";
 
 type GetEnumType<T> = [T] extends [EnumItem] ? ExtractKeys<Enums, T["EnumType"]> : never;
 
@@ -13,7 +13,7 @@ interface DataTypes {
   readonly color: Color3;
 }
 
-type TupleMetadata<T extends unknown[]> =
+type TupleMetadata<T extends readonly unknown[]> =
   ["_tuple", T] extends [keyof T, { readonly _tuple?: [infer V extends unknown[], infer RestLengthType]; }]
   ? [
     "tuple",
@@ -28,12 +28,12 @@ type TupleMetadata<T extends unknown[]> =
     HasRest<T> extends true ? SerializerMetadata<u32> : undefined
   ];
 
-type ListMetadata<T extends unknown[]> =
+type ListMetadata<T extends readonly unknown[]> =
   ["_list", T] extends [keyof T, { readonly _list?: [infer V, infer Size]; }]
   ? ["list", SerializerMetadata<V>, SerializerMetadata<Size>]
   : ["list", SerializerMetadata<T[number]>, SerializerMetadata<u32>];
 
-type ArrayMetadata<T extends unknown[]> =
+type ArrayMetadata<T extends readonly unknown[]> =
   [T] extends [{ length: number }]
   ? TupleMetadata<T>
   : ListMetadata<T>;
@@ -118,7 +118,7 @@ export type SerializerMetadata<T> =
   ? ["map", SerializerMetadata<K>, SerializerMetadata<V>, SerializerMetadata<u32>]
   : [T] extends [DataTypes[keyof DataTypes]]
   ? [ExtractKeys<DataTypes, T>]
-  : [T] extends [unknown[]]
+  : [T] extends [unknown[] | readonly unknown[]]
   ? ArrayMetadata<T>
   : [T] extends [EnumItem]
   ? ["enum", GetEnumType<T>]
@@ -144,7 +144,7 @@ export type SerializerMetadata<T> =
       : never)[],
   ]
   : true extends HasNominal<keyof T>
-  ? ["blobballs"]
+  ? ["blob"]
   : T extends object
   ? [
     "object_raw",
@@ -152,4 +152,4 @@ export type SerializerMetadata<T> =
       [K in keyof T]-?: [K, SerializerMetadata<T[K]>];
     }[keyof T][],
   ]
-  : ["blobnutz"];
+  : ["blob"];
