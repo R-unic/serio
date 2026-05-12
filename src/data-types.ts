@@ -62,45 +62,49 @@ type StripMetaStep<T, Depth extends number> =
   ? T
   : T extends readonly (infer U)[]
   ? readonly StripMeta<U, Prev[Depth]>[]
-  : T extends { readonly _packed?: [infer V] }
+  : T extends { readonly _packed?: [infer V]; }
   ? StripMeta<V, Prev[Depth]>
   : T extends List<infer V>
   ? StripMeta<V, Prev[Depth]>[]
   : T extends Tuple<infer V>
   ? { [K in keyof V]: StripMeta<V[K], Prev[Depth]> }
   : T extends HashSet<infer V>
-  ? Set<StripMeta<V, Prev[Depth]>>
+  ? ReadonlySet<StripMeta<V, Prev[Depth]>>
   : T extends HashMap<infer K, infer V>
-  ? Map<StripMeta<K, Prev[Depth]>, StripMeta<V, Prev[Depth]>>
+  ? ReadonlyMap<StripMeta<K, Prev[Depth]>, StripMeta<V, Prev[Depth]>>
+  : T extends ReadonlySet<infer V>
+  ? ReadonlySet<StripMeta<V, Prev[Depth]>>
+  : T extends ReadonlyMap<infer K, infer V>
+  ? ReadonlyMap<StripMeta<K, Prev[Depth]>, StripMeta<V, Prev[Depth]>>
   : T extends object
   ? {
     [K in keyof StripMetaProps<T>]: StripMeta<StripMetaProps<T>[K], Prev[Depth]>
   }
   : T;
 
-export type u8 = number & { readonly _u8?: never };
-export type u12 = number & { readonly _u12?: never };
-export type u16 = number & { readonly _u16?: never };
-export type u24 = number & { readonly _u24?: never };
-export type u32 = number & { readonly _u32?: never };
-export type i8 = number & { readonly _i8?: never };
-export type i12 = number & { readonly _i12?: never };
-export type i16 = number & { readonly _i16?: never };
-export type i24 = number & { readonly _i24?: never };
-export type i32 = number & { readonly _i32?: never };
-export type f8 = number & { readonly _f8?: never };
-export type f16 = number & { readonly _f16?: never };
-export type f24 = number & { readonly _f24?: never };
-export type f32 = number & { readonly _f32?: never };
-export type f64 = number & { readonly _f64?: never };
+export type u8 = number & { readonly _u8?: never; };
+export type u12 = number & { readonly _u12?: never; };
+export type u16 = number & { readonly _u16?: never; };
+export type u24 = number & { readonly _u24?: never; };
+export type u32 = number & { readonly _u32?: never; };
+export type i8 = number & { readonly _i8?: never; };
+export type i12 = number & { readonly _i12?: never; };
+export type i16 = number & { readonly _i16?: never; };
+export type i24 = number & { readonly _i24?: never; };
+export type i32 = number & { readonly _i32?: never; };
+export type f8 = number & { readonly _f8?: never; };
+export type f16 = number & { readonly _f16?: never; };
+export type f24 = number & { readonly _f24?: never; };
+export type f32 = number & { readonly _f32?: never; };
+export type f64 = number & { readonly _f64?: never; };
 
-export type String<LengthType extends USize = u32> = string & { readonly _string?: [LengthType] };
+export type String<LengthType extends USize = u32> = string & { readonly _string?: [LengthType]; };
 
 /** UDim */
 export type ScaleOffset<
   Scale extends number = f32,
   Offset extends number = u16
-> = UDim & { readonly _udim?: [Scale, Offset] };
+> = UDim & { readonly _udim?: [Scale, Offset]; };
 
 /** UDim2 */
 export type ScaleOffset2<
@@ -108,37 +112,37 @@ export type ScaleOffset2<
   OffsetX extends number = u16,
   ScaleY extends number = ScaleX,
   OffsetY extends number = OffsetX
-> = UDim2 & { readonly _udim2?: [ScaleX, OffsetX, ScaleY, OffsetY] };
+> = UDim2 & { readonly _udim2?: [ScaleX, OffsetX, ScaleY, OffsetY]; };
 
 /** Vector3 */
 export type Vector<
   X extends number = f32,
   Y extends number = X,
   Z extends number = X
-> = Vector3 & { readonly _vector?: [X, Y, Z] };
+> = Vector3 & { readonly _vector?: [X, Y, Z]; };
 
 /** CFrame */
 export type Transform<
   X extends number = f32,
   Y extends number = X,
   Z extends number = X
-> = CFrame & { readonly _cf?: [X, Y, Z] };
+> = CFrame & { readonly _cf?: [X, Y, Z]; };
 
 /** T[] */
 export type List<T, LengthType extends USize = u32> =
-  T[] & { readonly _list?: [T, LengthType] };
+  T[] & { readonly _list?: [T, LengthType]; };
 
 /** [A, B, C] */
 export type Tuple<T extends unknown[], LengthType extends USize = u32> =
-  T & { readonly _tuple?: [T, LengthType] };
+  T & { readonly _tuple?: [T, LengthType]; };
 
 /** Set<T> */
 export type HashSet<T, LengthType extends USize = u32> =
-  Set<T> & { readonly _set?: [T, LengthType] };
+  Set<T> & { readonly _set?: [T, LengthType]; };
 
 /** Map<K, V> */
 export type HashMap<K, V, LengthType extends USize = u32> =
-  Map<K, V> & { readonly _map?: [K, V, LengthType] };
+  Map<K, V> & { readonly _map?: [K, V, LengthType]; };
 
 /** Bitpacks all descendant fields */
-export type Packed<T> = T & { readonly _packed?: [T] };
+export type Packed<T> = T & { readonly _packed?: [T]; };
