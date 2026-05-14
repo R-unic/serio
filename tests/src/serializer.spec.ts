@@ -10,9 +10,8 @@ import {
   BaseSerializationTest, TestTaggedUnion, type TestLiteralUnion, type TestObject, type TestPackedBooleans
 } from "./utility";
 import type {
-  u8, u12, u16, u24, u32, i8, i12, i16, i24, i32, f16, f24, f32, f64,
+  u8, u12, u16, u24, u32, i8, i12, i16, i24, i32, f8, f16, f24, f32, f64,
   String, List, HashSet, HashMap, Packed,
-  f8,
 } from "../src/index";
 import type { NumberType } from "../src/types";
 
@@ -99,7 +98,7 @@ class SerializationTest extends BaseSerializationTest {
 
   @Fact
   public u12Packing(): void {
-    const { buf } = this.serialize<Packed<{ a: u12, b: u12 }>>({ a: 4000, b: 69 });
+    const { buf } = this.serialize<Packed<{ a: u12, b: u12; }>>({ a: 4000, b: 69 });
     Assert.defined(buf);
     Assert.equal(3, len(buf));
   }
@@ -368,7 +367,7 @@ class SerializationTest extends BaseSerializationTest {
   public optional(): void {
     {
       const value = { foo: 69 };
-      const { buf } = this.serialize<{ foo?: u8 }>(value);
+      const { buf } = this.serialize<{ foo?: u8; }>(value);
       Assert.defined(buf);
       Assert.equal(2, len(buf));
 
@@ -377,7 +376,7 @@ class SerializationTest extends BaseSerializationTest {
       Assert.equal(value.foo, result);
     }
     {
-      const { buf } = this.serialize<{ foo?: u8 }>({});
+      const { buf } = this.serialize<{ foo?: u8; }>({});
       Assert.defined(buf);
       Assert.equal(1, len(buf));
 
@@ -390,7 +389,7 @@ class SerializationTest extends BaseSerializationTest {
   @Fact
   public packedOptionals(): void {
     const value = { foo: 69, bar: undefined };
-    const { buf } = this.serialize<{ foo?: u8, bar?: u8 }>(value);
+    const { buf } = this.serialize<{ foo?: u8, bar?: u8; }>(value);
     Assert.defined(buf);
     Assert.equal(3, len(buf));
 

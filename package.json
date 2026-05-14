@@ -34,10 +34,10 @@
   "devDependencies": {
     "@flamework/core": "^1.3.2",
     "@rbxts/compiler-types": "^3.0.0-types.0",
-    "@rbxts/types": "^1.0.856",
+    "@rbxts/types": "^1.0.920",
     "nyc": "^17.1.0",
     "rbxts-transformer-flamework": "^1.3.2",
     "roblox-ts": "^3.0.0",
-    "typescript": "^5.5.3"
+    "typescript": "=5.5.3"
   }
 }
