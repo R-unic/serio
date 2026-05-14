@@ -15,7 +15,7 @@ export type PrimitiveDataType =
   | "bool"
   | "color"
   | "colorsequence"
-  | "numbersequence"
+  | "numbersequence";
 
 export type USize = u8 | u12 | u16 | u24 | u32;
 export type Primitive<T extends PrimitiveDataType = PrimitiveDataType> = [T];

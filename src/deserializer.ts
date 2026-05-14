@@ -166,7 +166,7 @@ export function getDeserializeFunction<T>(
             const packed = readu8(buf, currentOffset);
             offset += 1;
 
-            const index = packed & 0x7
+            const index = packed & 0x7;
             if (index !== 0x7)
               return COMMON_UDIM2S[index];
           }
@@ -186,7 +186,7 @@ export function getDeserializeFunction<T>(
             const packed = readu8(buf, currentOffset);
             offset += 1;
 
-            const index = packed & 0x3F
+            const index = packed & 0x3F;
             if (index !== 0x3F)
               return COMMON_VECTORS[index];
           }
@@ -234,14 +234,15 @@ export function getDeserializeFunction<T>(
         for (const _ of $range(1, size))
           list.push(deserialize(elementMeta)!);
 
-        return list
+        return list;
       }
       case "object": {
         const [_, elements, preallocation] = meta;
         const object = table.clone(preallocation);
         for (const i of $range(1, elements.size(), 2)) {
           const key = elements[i - 1] as string;
-          object.set(key, deserialize(elements[i] as SerializerSchema));
+          const value = deserialize(elements[i] as SerializerSchema);
+          object.set(key, value);
         }
 
         return object;
