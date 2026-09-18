@@ -83,20 +83,18 @@ type StripMetaStep<T, Depth extends number> =
   : T;
 
 export type u8 = number & { readonly _u8?: never; };
-export type u12 = number & { readonly _u12?: never; };
 export type u16 = number & { readonly _u16?: never; };
-export type u24 = number & { readonly _u24?: never; };
 export type u32 = number & { readonly _u32?: never; };
 export type i8 = number & { readonly _i8?: never; };
-export type i12 = number & { readonly _i12?: never; };
 export type i16 = number & { readonly _i16?: never; };
-export type i24 = number & { readonly _i24?: never; };
 export type i32 = number & { readonly _i32?: never; };
 export type f8 = number & { readonly _f8?: never; };
 export type f16 = number & { readonly _f16?: never; };
 export type f24 = number & { readonly _f24?: never; };
 export type f32 = number & { readonly _f32?: never; };
 export type f64 = number & { readonly _f64?: never; };
+export type IntWithin<Min extends number, Max extends number> = number & { readonly _iwithin?: [Min, Max]; };
+export type FloatWithin<Min extends number, Max extends number, Quantize extends number> = number & { readonly _fwithin?: [Min, Max, Quantize]; };
 
 export type String<LengthType extends USize = u32> = string & { readonly _string?: [LengthType]; };
 

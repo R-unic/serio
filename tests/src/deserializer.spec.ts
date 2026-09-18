@@ -4,14 +4,16 @@ import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 import {
   assertVectorEqual, assertCFrameEqual, assertIterableEqual, getSerializer,
   type SerializeMetadata, type TestLiteralUnion, type TestObject, type TestPackedBooleans,
-  type TestMixedLiteralUnion, type TestTaggedUnion, type TestComplexUnion, type NullableLiteralUnion
+  type TestMixedLiteralUnion, type TestTaggedUnion, type TestComplexUnion, type NullableLiteralUnion,
+  type TestBinaryLiteral, type TestSingularObjectUnion, type TestManyOptionals, type TestConstantLiteral
 } from "./utility";
 import type {
-  u8, u12, u16, u24, u32, i8, i12, i16, i24, i32, f16, f24, f32, f64,
+  u8, u16, u32, i8, i16, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap, Vector,
   Transform,
-  Packed,
-  f8
+  Packed, Tuple,
+  f8,
+  IntWithin, FloatWithin
 } from "../src/index";
 
 const angles = CFrame.Angles;
@@ -26,23 +28,9 @@ class DeserializationTest {
   }
 
   @Fact
-  public u12(): void {
-    const n = 4000;
-    const result = this.deserialize<Packed<u12>>(n);
-    Assert.equal(n, result);
-  }
-
-  @Fact
   public u16(): void {
     const n = 42069;
     const result = this.deserialize<u16>(n);
-    Assert.equal(n, result);
-  }
-
-  @Fact
-  public u24(): void {
-    const n = 6_942_069;
-    const result = this.deserialize<u24>(n);
     Assert.equal(n, result);
   }
 
@@ -61,23 +49,9 @@ class DeserializationTest {
   }
 
   @Fact
-  public i12(): void {
-    const n = -2000;
-    const result = this.deserialize<Packed<i12>>(n);
-    Assert.equal(n, result);
-  }
-
-  @Fact
   public i16(): void {
     const n = -420;
     const result = this.deserialize<i16>(n);
-    Assert.equal(n, result);
-  }
-
-  @Fact
-  public i24(): void {
-    const n = -69_420;
-    const result = this.deserialize<i24>(n);
     Assert.equal(n, result);
   }
 
@@ -86,6 +60,44 @@ class DeserializationTest {
     const n = -69_420_420;
     const result = this.deserialize<i32>(n);
     Assert.equal(n, result);
+  }
+
+  @Fact
+  public intWithinByteAligned(): void {
+    const n = 200;
+    const result = this.deserialize<IntWithin<0, 255>>(n);
+    Assert.equal(n, result);
+  }
+
+  @Fact
+  public intWithinPacking(): void {
+    const value = { a: 69, b: 100 };
+    const result = this.deserialize<Packed<{ a: IntWithin<0, 127>, b: IntWithin<0, 127>; }>>(value);
+    Assert.equal(value.a, result.a);
+    Assert.equal(value.b, result.b);
+  }
+
+  @Fact
+  public intWithinNegativeRange(): void {
+    const value = { a: -50, b: 12 };
+    const result = this.deserialize<Packed<{ a: IntWithin<-64, 63>, b: IntWithin<-64, 63>; }>>(value);
+    Assert.equal(value.a, result.a);
+    Assert.equal(value.b, result.b);
+  }
+
+  @Fact
+  public floatWithinByteAligned(): void {
+    const n = 42.5;
+    const result = this.deserialize<FloatWithin<0, 100, 8>>(n);
+    Assert.fuzzyEqual(n, result, 0.5);
+  }
+
+  @Fact
+  public floatWithinPacking(): void {
+    const value = { a: 42.5, b: -10 };
+    const result = this.deserialize<Packed<{ a: FloatWithin<0, 100, 6>, b: FloatWithin<-50, 50, 6>; }>>(value);
+    Assert.fuzzyEqual(value.a, result.a, 2);
+    Assert.fuzzyEqual(value.b, result.b, 2);
   }
 
   @Fact
@@ -388,6 +400,191 @@ class DeserializationTest {
 
     const result = this.deserialize<Packed<{ cf: Transform<u8> }>>({ cf });
     assertCFrameEqual(cf, result.cf);
+  }
+
+  @Fact
+  public udim(): void {
+    const value = new UDim(0.5, 100);
+    const result = this.deserialize<UDim>(value);
+    Assert.equal(value, result);
+  }
+
+  @Fact
+  public udim2(): void {
+    const value = UDim2.fromScale(0.3, 0.7);
+    const result = this.deserialize<UDim2>(value);
+    Assert.equal(value, result);
+  }
+
+  @Fact
+  public udim2PackedSpecialCase(): void {
+    const value = UDim2.fromScale(0.5, 0.5);
+    const result = this.deserialize<Packed<{ ud: UDim2; }>>({ ud: value });
+    Assert.equal(value, result.ud);
+  }
+
+  @Fact
+  public color(): void {
+    const value = Color3.fromRGB(200, 100, 50);
+    const result = this.deserialize<Color3>(value);
+    Assert.equal(value, result);
+  }
+
+  @Fact
+  public numberSequence(): void {
+    const value = new NumberSequence([
+      new NumberSequenceKeypoint(0, 0),
+      new NumberSequenceKeypoint(0.5, 0.75),
+      new NumberSequenceKeypoint(1, 1)
+    ]);
+    const result = this.deserialize<NumberSequence>(value);
+    Assert.equal(value.Keypoints.size(), result.Keypoints.size());
+
+    for (const i of $range(1, value.Keypoints.size())) {
+      const expected = value.Keypoints[i - 1];
+      const actual = result.Keypoints[i - 1];
+      Assert.fuzzyEqual(expected.Time, actual.Time, 1e-3);
+      Assert.fuzzyEqual(expected.Value, actual.Value, 1e-3);
+      Assert.fuzzyEqual(expected.Envelope, actual.Envelope, 1e-3);
+    }
+  }
+
+  @Fact
+  public colorSequence(): void {
+    const value = new ColorSequence([
+      new ColorSequenceKeypoint(0, Color3.fromRGB(10, 20, 30)),
+      new ColorSequenceKeypoint(1, Color3.fromRGB(200, 150, 100))
+    ]);
+    const result = this.deserialize<ColorSequence>(value);
+    Assert.equal(value.Keypoints.size(), result.Keypoints.size());
+
+    for (const i of $range(1, value.Keypoints.size())) {
+      const expected = value.Keypoints[i - 1];
+      const actual = result.Keypoints[i - 1];
+      Assert.fuzzyEqual(expected.Time, actual.Time, 1e-3);
+      Assert.equal(expected.Value, actual.Value);
+    }
+  }
+
+  @Fact
+  public tuple(): void {
+    const value: [u8, boolean, string] = [69, true, "hi"];
+    const result = this.deserialize<[u8, boolean, string]>(value);
+    assertIterableEqual(value as never, result as never);
+  }
+
+  @Fact
+  public tupleWithRest(): void {
+    const value: Tuple<[u8, ...u8[]], u8> = [1, 2, 3, 4] as never;
+    const result = this.deserialize<Tuple<[u8, ...u8[]], u8>>(value);
+    assertIterableEqual(value as never, result as never);
+  }
+
+  @Fact
+  public blob(): void {
+    const instance = new Instance("Folder");
+    const result = this.deserialize<Instance>(instance);
+    Assert.equal(instance, result);
+  }
+
+  @Fact
+  public packedOptionalsReal(): void {
+    const value = { foo: 69, bar: undefined as u8 | undefined };
+    const result = this.deserialize<Packed<{ foo?: u8, bar?: u8; }>>(value);
+    Assert.equal(value.foo, result.foo);
+    Assert.equal(value.bar, result.bar);
+  }
+
+  @Fact
+  public packedTaggedUnion(): void {
+    const value: TestTaggedUnion = { tag: "a", value: 69 };
+    const result = this.deserialize<Packed<TestTaggedUnion>>(value);
+    Assert.isType<TestTaggedUnion>(result);
+    Assert.equal(value.tag, result.tag);
+    Assert.equal(result.value, value.value);
+  }
+
+  @Fact
+  public packedLiteralUnion(): void {
+    const result = this.deserialize<Packed<{ x: TestBinaryLiteral; }>>({ x: "a" });
+    Assert.equal("a", result.x);
+  }
+
+  @Fact
+  public guardUnionSingularObject(): void {
+    const result = this.deserialize<TestSingularObjectUnion>({ tag: 5 });
+    Assert.isType<{ tag: u8; }>(result);
+    Assert.equal(5, (result as { tag: u8; }).tag);
+  }
+
+  @Fact
+  public literalSingleConstant(): void {
+    const value: TestConstantLiteral = { kind: "foo", value: 69 };
+    const result = this.deserialize<TestConstantLiteral>(value);
+    Assert.equal("foo", result.kind);
+    Assert.equal(69, result.value);
+  }
+
+  @Fact
+  public packedBooleansReal(): void {
+    // uses a distinct `text` key (and explicit field order) so this doesn't collide, via the
+    // shared serializer cache in ./utility, with SerializationTest's "Packed<TestPackedBooleans>" test
+    const value: TestPackedBooleans = { a: true, b: false, c: true, d: false, e: true, f: false, g: true, h: false };
+    const result = this.deserialize<Packed<TestPackedBooleans>>(value, {
+      text: "Packed<TestPackedBooleans>RoundTrip",
+      serializerMeta: ["packed", ["object_raw", [
+        ["a", ["bool"]],
+        ["b", ["bool"]],
+        ["c", ["bool"]],
+        ["d", ["bool"]],
+        ["e", ["bool"]],
+        ["f", ["bool"]],
+        ["g", ["bool"]],
+        ["h", ["bool"]]
+      ]]]
+    } as never);
+    assertIterableEqual(value as never, result as never);
+  }
+
+  @Fact
+  public packedManyOptionals(): void {
+    // shares the explicit metadata (and `text` cache key) used by SerializationTest's test of the same name
+    const value: TestManyOptionals = { a: 5, h: 9 };
+    const result = this.deserialize<Packed<TestManyOptionals>>(value, {
+      text: "Packed<TestManyOptionals>",
+      serializerMeta: ["packed", ["object_raw", [
+        ["a", ["optional", ["u8"]]],
+        ["b", ["optional", ["u8"]]],
+        ["c", ["optional", ["u8"]]],
+        ["d", ["optional", ["u8"]]],
+        ["e", ["optional", ["u8"]]],
+        ["f", ["optional", ["u8"]]],
+        ["g", ["optional", ["u8"]]],
+        ["h", ["optional", ["u8"]]]
+      ]]]
+    } as never);
+    Assert.equal(5, result.a);
+    Assert.equal(9, result.h);
+    Assert.undefined(result.b);
+    Assert.undefined(result.c);
+    Assert.undefined(result.d);
+    Assert.undefined(result.e);
+    Assert.undefined(result.f);
+    Assert.undefined(result.g);
+  }
+
+  @Fact
+  public cframeIdentity(): void {
+    const value = new CFrame();
+    const result = this.deserialize<CFrame>(value);
+    assertCFrameEqual(value, result);
+  }
+
+  @Fact
+  public bufferResize(): void {
+    const s = string.rep("a", 500);
+    const result = this.deserialize<string>(s);
+    Assert.equal(s, result);
   }
 
   /** @metadata macro */

@@ -1,40 +1,21 @@
 import { Assert, Fact, Theory, InlineData } from "@rbxts/runit";
 import { deunify } from "@rbxts/flamework-meta-utils";
 
-import { u24 as u24Utility } from "../../src/utility/u24";
-import { i24 as i24Utility } from "../../src/utility/i24";
 import { f24 as f24Utility } from "../../src/utility/f24";
 import { f16 as f16Utility } from "../../src/utility/f16";
 import { f8 as f8Utility } from "../../src/utility/f8";
 import {
-  BaseSerializationTest, TestTaggedUnion, type TestLiteralUnion, type TestObject, type TestPackedBooleans
+  BaseSerializationTest, TestTaggedUnion, type TestLiteralUnion, type TestObject, type TestPackedBooleans,
+  type TestComplexUnion, type TestBinaryLiteral, type TestManyOptionals, type TestConstantLiteral
 } from "./utility";
 import type {
-  u8, u12, u16, u24, u32, i8, i12, i16, i24, i32, f8, f16, f24, f32, f64,
-  String, List, HashSet, HashMap, Packed,
+  u8, u16, u32, i8, i16, i32, f8, f16, f24, f32, f64,
+  String, List, HashSet, HashMap, Packed, Tuple,
+  IntWithin, FloatWithin,
 } from "../src/index";
 import type { NumberType } from "../src/types";
 
 const { len, readu8, readu16, readu32, readi8, readi16, readi32, readf32, readf64, readstring } = buffer;
-
-function reconstructU12(bits: readonly [boolean, boolean, boolean, boolean], low: number): number {
-  const [b11, b10, b9, b8] = bits;
-
-  return ((b11 ? 1 : 0) << 11)
-    | ((b10 ? 1 : 0) << 10)
-    | ((b9 ? 1 : 0) << 9)
-    | ((b8 ? 1 : 0) << 8)
-    | low;
-}
-
-function reconstructI12(bits: readonly [boolean, boolean, boolean, boolean], low: number): number {
-  let value = reconstructU12(bits, low);
-  const isSigned = (value & 0x800) === 0x800;
-  if (isSigned)
-    value -= 0x1000;
-
-  return value;
-}
 
 class SerializationTest extends BaseSerializationTest {
   @Theory
@@ -63,6 +44,43 @@ class SerializationTest extends BaseSerializationTest {
   }
 
   @Fact
+  public intWithinByteAligned(): void {
+    const n = 200;
+    const { buf } = this.serialize<IntWithin<0, 255>>(n);
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+
+    const result = readu8(buf, 0);
+    Assert.equal(n, result);
+  }
+
+  @Fact
+  public intWithinRequiresPackingWhenNotByteAligned(): void {
+    Assert.throws(() => this.serialize<IntWithin<0, 127>>(69));
+  }
+
+  @Fact
+  public intWithinPacking(): void {
+    const { buf } = this.serialize<Packed<{ a: IntWithin<0, 127>, b: IntWithin<0, 127>; }>>({ a: 69, b: 69 });
+    Assert.defined(buf);
+    Assert.equal(2, len(buf));
+
+    Assert.equal(197, readu8(buf, 0));
+    Assert.equal(34, readu8(buf, 1));
+  }
+
+  @Fact
+  public floatWithin(): void {
+    const n = 42.5;
+    const { buf } = this.serialize<FloatWithin<0, 100, 8>>(n);
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+
+    const result = readu8(buf, 0);
+    Assert.equal(108, result);
+  }
+
+  @Fact
   public u8(): void {
     const n = 69;
     const { buf } = this.serialize<u8>(n);
@@ -74,36 +92,6 @@ class SerializationTest extends BaseSerializationTest {
   }
 
   @Fact
-  public u12(): void {
-    const n = 4000;
-    const { buf } = this.serialize<Packed<u12>>(n);
-    Assert.defined(buf);
-    Assert.equal(2, len(buf));
-
-    const packedBits = readu8(buf, 0);
-    const low = readu8(buf, 1);
-    Assert.equal(15, packedBits);
-    Assert.equal(160, low);
-
-    const bits = [
-      (packedBits & 0b0001) !== 0,
-      (packedBits & 0b0010) !== 0,
-      (packedBits & 0b0100) !== 0,
-      (packedBits & 0b1000) !== 0
-    ] as const;
-
-    const result = reconstructU12(bits, low);
-    Assert.equal(n, result);
-  }
-
-  @Fact
-  public u12Packing(): void {
-    const { buf } = this.serialize<Packed<{ a: u12, b: u12; }>>({ a: 4000, b: 69 });
-    Assert.defined(buf);
-    Assert.equal(3, len(buf));
-  }
-
-  @Fact
   public u16(): void {
     const n = 42069;
     const { buf } = this.serialize<u16>(n);
@@ -111,17 +99,6 @@ class SerializationTest extends BaseSerializationTest {
     Assert.equal(2, len(buf));
 
     const result = readu16(buf, 0);
-    Assert.equal(n, result);
-  }
-
-  @Fact
-  public u24(): void {
-    const n = 69_420;
-    const { buf } = this.serialize<u24>(n);
-    Assert.defined(buf);
-    Assert.equal(3, len(buf));
-
-    const result = u24Utility.read(buf, 0);
     Assert.equal(n, result);
   }
 
@@ -148,29 +125,6 @@ class SerializationTest extends BaseSerializationTest {
   }
 
   @Fact
-  public i12(): void {
-    const n = -2000;
-    const { buf } = this.serialize<Packed<i12>>(n);
-    Assert.defined(buf);
-    Assert.equal(2, len(buf));
-
-    const packedBits = readu8(buf, 0);
-    const low = readu8(buf, 1);
-    Assert.equal(1, packedBits);
-    Assert.equal(48, low);
-
-    const bits = [
-      (packedBits & 0b0001) !== 0,
-      (packedBits & 0b0010) !== 0,
-      (packedBits & 0b0100) !== 0,
-      (packedBits & 0b1000) !== 0
-    ] as const;
-
-    const result = reconstructI12(bits, low);
-    Assert.equal(n, result);
-  }
-
-  @Fact
   public i16(): void {
     const n = 13337;
     const { buf } = this.serialize<i16>(n);
@@ -178,17 +132,6 @@ class SerializationTest extends BaseSerializationTest {
     Assert.equal(2, len(buf));
 
     const result = readi16(buf, 0);
-    Assert.equal(n, result);
-  }
-
-  @Fact
-  public i24(): void {
-    const n = 69_420;
-    const { buf } = this.serialize<i24>(n);
-    Assert.defined(buf);
-    Assert.equal(3, len(buf));
-
-    const result = i24Utility.read(buf, 0);
     Assert.equal(n, result);
   }
 
@@ -555,6 +498,207 @@ class SerializationTest extends BaseSerializationTest {
       Assert.true(value.has(k));
       Assert.equal(value.get(k), v);
     }
+  }
+
+  @Fact
+  public udim(): void {
+    const value = new UDim(0.5, 100);
+    const { buf } = this.serialize<UDim>(value);
+    Assert.defined(buf);
+    Assert.equal(6, len(buf));
+
+    Assert.equal(value.Scale, readf32(buf, 0));
+    Assert.equal(value.Offset, readu16(buf, 4));
+  }
+
+  @Fact
+  public udim2(): void {
+    // not one of the COMMON_UDIM2S special cases
+    const value = UDim2.fromScale(0.3, 0.7);
+    const { buf } = this.serialize<UDim2>(value);
+    Assert.defined(buf);
+    Assert.equal(12, len(buf));
+
+    Assert.equal(value.X.Scale, readf32(buf, 0));
+    Assert.equal(value.X.Offset, readu16(buf, 4));
+    Assert.equal(value.Y.Scale, readf32(buf, 6));
+    Assert.equal(value.Y.Offset, readu16(buf, 10));
+  }
+
+  @Fact
+  public udim2PackedSpecialCase(): void {
+    // UDim2.fromScale(0.5, 0.5) is a COMMON_UDIM2S entry (index 6), so it should shortcut to a single byte
+    const value = UDim2.fromScale(0.5, 0.5);
+    const { buf } = this.serialize<Packed<{ ud: UDim2; }>>({ ud: value });
+    Assert.defined(buf);
+    Assert.equal(2, len(buf));
+
+    Assert.equal(1, readu8(buf, 0)); // packed "isOptimized" bit
+    Assert.equal(6, readu8(buf, 1)); // special case index
+  }
+
+  @Fact
+  public color(): void {
+    const value = Color3.fromRGB(200, 100, 50);
+    const { buf } = this.serialize<Color3>(value);
+    Assert.defined(buf);
+    Assert.equal(3, len(buf));
+
+    Assert.equal(200, readu8(buf, 0));
+    Assert.equal(100, readu8(buf, 1));
+    Assert.equal(50, readu8(buf, 2));
+  }
+
+  @Fact
+  public numberSequence(): void {
+    const value = new NumberSequence([
+      new NumberSequenceKeypoint(0, 0),
+      new NumberSequenceKeypoint(1, 1)
+    ]);
+    const { buf } = this.serialize<NumberSequence>(value);
+    Assert.defined(buf);
+    Assert.equal(1 + 6 * 2, len(buf));
+    Assert.equal(2, readu8(buf, 0));
+  }
+
+  @Fact
+  public colorSequence(): void {
+    const value = new ColorSequence([
+      new ColorSequenceKeypoint(0, Color3.fromRGB(0, 0, 0)),
+      new ColorSequenceKeypoint(1, Color3.fromRGB(255, 255, 255))
+    ]);
+    const { buf } = this.serialize<ColorSequence>(value);
+    Assert.defined(buf);
+    Assert.equal(1 + 5 * 2, len(buf));
+    Assert.equal(2, readu8(buf, 0));
+  }
+
+  @Fact
+  public tuple(): void {
+    const value: [u8, boolean, string] = [69, true, "hi"];
+    const { buf } = this.serialize<[u8, boolean, string]>(value);
+    Assert.defined(buf);
+    Assert.equal(8, len(buf));
+
+    Assert.equal(69, readu8(buf, 0));
+    Assert.equal(true, readu8(buf, 1) === 1);
+    Assert.equal(2, readu32(buf, 2));
+    Assert.equal("hi", readstring(buf, 6, 2));
+  }
+
+  @Fact
+  public tupleWithRest(): void {
+    const value: Tuple<[u8, ...u8[]], u8> = [1, 2, 3, 4] as never;
+    const { buf } = this.serialize<Tuple<[u8, ...u8[]], u8>>(value);
+    Assert.defined(buf);
+    Assert.equal(5, len(buf));
+
+    Assert.equal(3, readu8(buf, 0)); // rest length, written before any elements
+    Assert.equal(1, readu8(buf, 1)); // fixed element
+    Assert.equal(2, readu8(buf, 2));
+    Assert.equal(3, readu8(buf, 3));
+    Assert.equal(4, readu8(buf, 4));
+  }
+
+  @Fact
+  public blob(): void {
+    const instance = new Instance("Folder");
+    const { buf, blobs } = this.serialize<Instance>(instance);
+    Assert.undefined(buf);
+    Assert.defined(blobs);
+    Assert.equal(1, blobs!.size());
+    Assert.equal(instance, blobs![0]);
+  }
+
+  @Fact
+  public packedOptionalsReal(): void {
+    const value = { foo: 69, bar: undefined as u8 | undefined };
+    const { buf } = this.serialize<Packed<{ foo?: u8, bar?: u8; }>>(value);
+    Assert.defined(buf);
+    // 2 packed existence bits (sharing 1 byte) + 1 direct value byte for foo, instead of 3 bytes unpacked
+    Assert.equal(2, len(buf));
+  }
+
+  @Fact
+  public packedTaggedUnion(): void {
+    const { buf } = this.serialize<Packed<TestTaggedUnion>>({ tag: "a", value: 69 });
+    Assert.defined(buf);
+    Assert.equal(2, len(buf));
+
+    Assert.equal(1, readu8(buf, 0)); // packed tag bit ("a" => bit set)
+    Assert.equal(69, readu8(buf, 1));
+  }
+
+  @Fact
+  public packedLiteralUnion(): void {
+    const { buf } = this.serialize<Packed<{ x: TestBinaryLiteral; }>>({ x: "a" });
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+    Assert.equal(1, readu8(buf, 0)); // "a" => bit set
+  }
+
+  @Fact
+  public guardUnionThrowsWhenNoMatch(): void {
+    Assert.throws(() => this.serialize<TestComplexUnion>({} as never));
+  }
+
+  @Fact
+  public literalSingleConstant(): void {
+    // "kind" is a compile-time constant (not a union), so it costs 0 bytes
+    const value: TestConstantLiteral = { kind: "foo", value: 69 };
+    const { buf } = this.serialize<TestConstantLiteral>(value);
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+
+    Assert.equal(69, readu8(buf, 0));
+  }
+
+  @Fact
+  public floatWithinRequiresPackingWhenNotByteAligned(): void {
+    // 0-100 quantized to 6 bits is not byte-aligned, so it must be packed
+    Assert.throws(() => this.serialize<FloatWithin<0, 100, 6>>(50));
+  }
+
+  @Fact
+  public packedManyOptionals(): void {
+    // 8 packed optional-existence bits don't fit in a single "variable" byte (7 usable bits),
+    // so this must span 2 bytes and exercise the continuation-bit scheme.
+    // Field order is forced explicitly (as with the packedBooleans test above) since the exact
+    // byte assertions below depend on it.
+    const value: TestManyOptionals = { a: 5, h: 9 };
+    const { buf } = this.serialize<Packed<TestManyOptionals>>(value, {
+      text: "Packed<TestManyOptionals>",
+      serializerMeta: ["packed", ["object_raw", [
+        ["a", ["optional", ["u8"]]],
+        ["b", ["optional", ["u8"]]],
+        ["c", ["optional", ["u8"]]],
+        ["d", ["optional", ["u8"]]],
+        ["e", ["optional", ["u8"]]],
+        ["f", ["optional", ["u8"]]],
+        ["g", ["optional", ["u8"]]],
+        ["h", ["optional", ["u8"]]]
+      ]]]
+    } as never);
+    Assert.defined(buf);
+    Assert.equal(4, len(buf));
+
+    Assert.equal(3, readu8(buf, 0)); // continuation flag + 'a' exists
+    Assert.equal(2, readu8(buf, 1)); // 'h' exists, no continuation
+    Assert.equal(5, readu8(buf, 2));
+    Assert.equal(9, readu8(buf, 3));
+  }
+
+  @Fact
+  public bufferResize(): void {
+    // longer than the initial 256-byte buffer, forcing a reallocation
+    const s = string.rep("a", 500);
+    const { buf } = this.serialize<string>(s);
+    Assert.defined(buf);
+    Assert.equal(4 + 500, len(buf));
+
+    const length = readu32(buf, 0);
+    Assert.equal(500, length);
+    Assert.equal(s, readstring(buf, 4, length));
   }
 }
 

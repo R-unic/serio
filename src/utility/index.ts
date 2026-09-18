@@ -1,5 +1,5 @@
 import { IS_LUNE } from "../constants";
-import type { NumberType, Primitive } from "../types";
+import type { ConcreteNumberType, NumberType, Primitive } from "../types";
 
 const { sort } = table;
 const { magnitude } = vector;
@@ -18,6 +18,32 @@ export function assertNumberRange(n: number, sizeInBytes: number, signed: boolea
     Value: ${n}
     Size (bits): ${sizeInBits}
     Signed: ${signed}`;
+}
+
+export function assertWithinRange(n: number, min: number, max: number): void {
+  if (n >= min && n <= max) return;
+  throw `[@rbxts/serio]: Attempt to serialize value out of range
+    Value: ${n}
+    Range: [${min}, ${max}]`;
+}
+
+/** The minimum number of bits required to represent `count` distinct values (0 if `count <= 1`). */
+export function bitWidthForCount(count: number): number {
+  if (count <= 1) return 0;
+
+  let bits = 0;
+  let range = 1;
+  while (range < count) {
+    range *= 2;
+    bits++;
+  }
+
+  return bits;
+}
+
+/** The minimum number of bits required to represent every integer in `[min, max]`. */
+export function bitWidthForRange(min: number, max: number): number {
+  return bitWidthForCount(max - min + 1);
 }
 
 export function fuzzyEq(a: Vector3, b: Vector3, epsilon = 1e-6): boolean {
@@ -48,11 +74,10 @@ export function getSortedEnumItems(enumObject: Enum): EnumItem[] {
   return enumItems;
 }
 
-const numberTypeSizes: Record<NumberType, number> = {
+const numberTypeSizes: Record<ConcreteNumberType, number> = {
   u8: 1, i8: 1, f8: 1,
-  u12: 1.5, i12: 1.5,
   u16: 2, i16: 2, f16: 2,
-  u24: 3, i24: 3, f24: 3,
+  f24: 3,
   u32: 4, i32: 4, f32: 4,
   f64: 8,
 };
@@ -61,7 +86,7 @@ export function sizeOfNumberType(kind: NumberType): number;
 export function sizeOfNumberType(primitive: Primitive<NumberType>): number;
 export function sizeOfNumberType(typeInfo: NumberType | Primitive<NumberType>): number {
   const kind = typeIs(typeInfo, "string") ? typeInfo : typeInfo[0];
-  return numberTypeSizes[kind];
+  return numberTypeSizes[kind as never] ?? 0;
 }
 
 export function isNumberType(typeName: string): typeName is NumberType {

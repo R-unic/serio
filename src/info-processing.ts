@@ -1,5 +1,5 @@
 import { SerializerSchema } from "./types";
-import { getSortedEnumItems } from "./utility";
+import { bitWidthForRange, getSortedEnumItems } from "./utility";
 
 const { max, ceil } = math;
 
@@ -59,13 +59,30 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       schema = ["object", transformed, preallocation];
       break;
     }
-    case "u12":
-    case "i12": {
-      if (!packing(info)) {
-        throw `[@rbxts/serio]: 12-bit types may not be used without packing!`;
+    case "iwithin": {
+      const [, min, max] = schema as ["iwithin", number, number];
+      const leftoverBits = bitWidthForRange(min, max) % 8;
+      if (leftoverBits > 0) {
+        if (!packing(info)) {
+          throw `[@rbxts/serio]: IntWithin<${min}, ${max}> is not byte-aligned and may not be used without packing!`;
+        }
+
+        addPackedBit(info, leftoverBits);
       }
 
-      addPackedBit(info, 4);
+      break;
+    }
+    case "fwithin": {
+      const [, min, max, quantize] = schema as ["fwithin", number, number, number];
+      const leftoverBits = quantize % 8;
+      if (leftoverBits > 0) {
+        if (!packing(info)) {
+          throw `[@rbxts/serio]: FloatWithin<${min}, ${max}, ${quantize}> is not byte-aligned and may not be used without packing!`;
+        }
+
+        addPackedBit(info, leftoverBits);
+      }
+
       break;
     }
     case "optional": {
@@ -149,7 +166,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       break;
     }
     case "tuple": {
-      const [_, elementTypes, restElementType] = schema;
+      const [_, elementTypes, restElementType, restLengthType] = schema;
       const fixedElements = elementTypes.map(v => schemaPass(v, info));
 
       let restElement;
@@ -159,7 +176,7 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
         restElement = schemaPass(restElementType, info);
       }
 
-      schema = [kind, fixedElements, restElement];
+      schema = [kind, fixedElements, restElement, restLengthType];
       break;
     }
     case "enum": {

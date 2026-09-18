@@ -1,16 +1,14 @@
 
-import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange, isNaN } from "./utility";
+import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange, assertWithinRange, bitWidthForRange, isNaN } from "./utility";
 import { f8 } from "./utility/f8";
 import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
-import { u12 } from "./utility/u12";
-import { u24 } from "./utility/u24";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializerSchema, SerializedData } from "./types";
 
 const { sub } = string;
-const { max, clamp, ceil, map, pi: PI } = math;
+const { max, clamp, ceil, floor, map, pi: PI } = math;
 const {
   copy, create: createBuffer, len: bufferLength,
   writei8, writei16, writei32, writeu8, writeu16, writeu32, writef32, writef64, writestring
@@ -20,10 +18,18 @@ const toAxisAngle = CFrame.identity.ToAxisAngle as (cf: CFrame) => ReturnType<CF
 const LIMIT_16_BITS = 2 ** 16 - 1;
 const LIMIT_15_BITS = 2 ** 15 - 1;
 
-function validateIfNumber(value: unknown, [kind]: SerializerSchema): void {
-  if (!isNumberType(kind)) return;
+function validateIfNumber(value: unknown, meta: SerializerSchema): void {
+  const [kind] = meta;
+  const isWithin = kind === "iwithin" || kind === "fwithin";
+  if (!isNumberType(kind) && !isWithin) return;
   if (value !== value) {
     throw `[@rbxts/serio]: Attempt to serialize NaN value as "${kind}"`;
+  }
+
+  if (isWithin) {
+    const [, min, max] = meta as ["iwithin" | "fwithin", number, number];
+    assertWithinRange(value as number, min, max);
+    return;
   }
 
   const size = sizeOfNumberType(kind);
@@ -52,6 +58,38 @@ export function getSerializeFunction<T>(
     copy(buf, 0, oldBuffer);
   }
 
+  /**
+   * Writes an unsigned integer using exactly `bitWidth` bits: as many full bytes as fit directly
+   * into the buffer, with any remaining (sub-byte) bits appended to the shared packed bit stream.
+   */
+  function writeWithinBits(code: number, bitWidth: number, currentOffset: number): void {
+    const fullBytes = bitWidth >> 3;
+    if (fullBytes > 0) {
+      allocate(fullBytes);
+      for (const i of $range(0, fullBytes - 1))
+        writeu8(buf, currentOffset + i, (code >> (8 * i)) & 0xFF);
+    }
+
+    const leftoverBits = bitWidth - fullBytes * 8;
+    if (leftoverBits > 0) {
+      const base = fullBytes * 8;
+      for (const i of $range(0, leftoverBits - 1))
+        bits.push(((code >> (base + i)) & 1) === 1);
+    }
+  }
+
+  function writeColor(color: Color3, currentOffset: number, note?: string): void {
+    const r = 0xFF * color.R;
+    const g = 0xFF * color.G;
+    const b = 0xFF * color.B;
+    assertNumberRange(r, 1, false, note !== undefined ? `${note} R value` : "color R value");
+    assertNumberRange(g, 1, false, note !== undefined ? `${note} G value` : "color G value");
+    assertNumberRange(b, 1, false, note !== undefined ? `${note} B value` : "color B value");
+    writeu8(buf, currentOffset, r);
+    writeu8(buf, 1 + currentOffset, g);
+    writeu8(buf, 2 + currentOffset, b);
+  }
+
   function serialize(value: unknown, meta: SerializerSchema, serializeOffset = offset): void {
     const currentOffset = serializeOffset;
     validateIfNumber(value, meta);
@@ -73,26 +111,6 @@ export function getSerializeFunction<T>(
         writeu32(buf, currentOffset, value as never);
         break;
       }
-      case "u12":
-      case "i12": {
-        const numberBits = u12.fromU32(value as never);
-        allocate(1);
-        writeu8(buf, currentOffset, numberBits & 0xFF);
-        bits.push(((numberBits >> 11) & 1) === 1);
-        bits.push(((numberBits >> 10) & 1) === 1);
-        bits.push(((numberBits >> 9) & 1) === 1);
-        bits.push(((numberBits >> 8) & 1) === 1);
-        break;
-      }
-      case "u24":
-      case "i24": {
-        const numberBits = u24.fromU32(value as never);
-        allocate(3);
-        writei8(buf, currentOffset, numberBits & 0xFF); // lower byte
-        writei8(buf, currentOffset + 1, (numberBits >> 8) & 0xFF); // middle byte
-        writei8(buf, currentOffset + 2, (numberBits >> 16) & 0xFF); // upper byte
-        break;
-      }
       case "i8": {
         allocate(1);
         writei8(buf, currentOffset, value as never);
@@ -106,6 +124,19 @@ export function getSerializeFunction<T>(
       case "i32": {
         allocate(4);
         writei32(buf, currentOffset, value as never);
+        break;
+      }
+      case "iwithin": {
+        const [_, min, max] = meta as ["iwithin", number, number];
+        const bitWidth = bitWidthForRange(min, max);
+        writeWithinBits((value as number) - min, bitWidth, currentOffset);
+        break;
+      }
+      case "fwithin": {
+        const [_, min, max, quantize] = meta as ["fwithin", number, number, number];
+        const levels = 2 ** quantize - 1;
+        const code = clamp(floor(map(value as number, min, max, 0, levels) + 0.5), 0, levels);
+        writeWithinBits(code, quantize, currentOffset);
         break;
       }
       case "f8": {
@@ -226,23 +257,14 @@ export function getSerializeFunction<T>(
           const time = 0xFFFF * keypoint.Time;
           assertNumberRange(time, 2, false, `color sequence keypoint #${i} time`);
           writeu16(buf, keypointOffset, time);
-          serialize(keypoint.Value, ["color"], 2 + keypointOffset);
+          writeColor(keypoint.Value, 2 + keypointOffset, `color sequence keypoint #${i} color`);
         }
 
         break;
       }
       case "color": {
-        const color = value as Color3;
-        const r = 0xFF * color.R;
-        const g = 0xFF * color.G;
-        const b = 0xFF * color.B;
-        assertNumberRange(r, 1, false, "color R value");
-        assertNumberRange(g, 1, false, "color G value");
-        assertNumberRange(b, 1, false, "color B value");
         allocate(3);
-        writeu8(buf, currentOffset, r);
-        writeu8(buf, 1 + currentOffset, g);
-        writeu8(buf, 2 + currentOffset, b);
+        writeColor(value as Color3, currentOffset);
         break;
       }
       case "udim": {
@@ -450,15 +472,13 @@ export function getSerializeFunction<T>(
         break;
       }
       case "tuple": {
-        const [_, elements, restMetadata] = meta;
+        const [_, elements, restMetadata, restLengthType] = meta;
         const tuple = value as unknown[];
         const size = tuple.size();
 
         if (restMetadata !== undefined) {
           const restSize = size - elements.size();
-          assertNumberRange(restSize, 2, false, "tuple rest length");
-          allocate(2);
-          writeu16(buf, currentOffset, restSize);
+          serialize(restSize, restLengthType!);
         }
 
         for (const i of $range(1, size)) {

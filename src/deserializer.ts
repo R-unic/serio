@@ -1,10 +1,6 @@
-import { sizeOfNumberType, sign, CF__add } from "./utility";
+import { sizeOfNumberType, sign, CF__add, bitWidthForRange } from "./utility";
 import { f24 } from "./utility/f24";
 import { f16 } from "./utility/f16";
-import { u24 } from "./utility/u24";
-import { u12 } from "./utility/u12";
-import { i24 } from "./utility/i24";
-import { i12 } from "./utility/i12";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS, IS_LUNE } from "./constants";
 import type { ProcessedInfo } from "./info-processing";
 import type { SerializedData, SerializerSchema } from "./types";
@@ -38,6 +34,35 @@ export function getDeserializeFunction<T>(
   let blobIndex = 0;
   let packing = false;
 
+  /**
+   * Reads an unsigned integer written with exactly `bitWidth` bits: the full bytes that were
+   * written directly to the buffer, plus any remaining (sub-byte) bits from the shared packed bit stream.
+   */
+  function readWithinBits(bitWidth: number, currentOffset: number): number {
+    const fullBytes = bitWidth >> 3;
+    let code = 0;
+    for (const i of $range(0, fullBytes - 1))
+      code += readu8(buf, currentOffset + i) << (8 * i);
+
+    const leftoverBits = bitWidth - fullBytes * 8;
+    if (leftoverBits > 0) {
+      const base = fullBytes * 8;
+      for (const i of $range(0, leftoverBits - 1)) {
+        if (bits[bitIndex++])
+          code += 1 << (base + i);
+      }
+    }
+
+    return code;
+  }
+
+  function readColor(currentOffset: number): Color3 {
+    const r = readu8(buf, currentOffset) as number;
+    const g = readu8(buf, currentOffset + 1) as number;
+    const b = readu8(buf, currentOffset + 2) as number;
+    return fromRGB(r, g, b);
+  }
+
   function deserialize(meta: SerializerSchema, serializeOffset = offset): unknown {
     const currentOffset = serializeOffset;
 
@@ -45,35 +70,33 @@ export function getDeserializeFunction<T>(
       case "u8":
         offset += 1;
         return readu8(buf, currentOffset);
-      case "u12":
-        offset += 1;
-        const u12Bits = [bits[bitIndex++], bits[bitIndex++], bits[bitIndex++], bits[bitIndex++]] as const;
-        return u12.read(buf, currentOffset, u12Bits);
       case "u16":
         offset += 2;
         return readu16(buf, currentOffset);
-      case "u24":
-        offset += 3;
-        return u24.read(buf, currentOffset);
       case "u32":
         offset += 4;
         return readu32(buf, currentOffset);
       case "i8":
         offset += 1;
         return readi8(buf, currentOffset);
-      case "i12":
-        offset += 1;
-        const i12Bits = [bits[bitIndex++], bits[bitIndex++], bits[bitIndex++], bits[bitIndex++]] as const;
-        return i12.read(buf, currentOffset, i12Bits);
       case "i16":
         offset += 2;
         return readi16(buf, currentOffset);
-      case "i24":
-        offset += 3;
-        return i24.read(buf, currentOffset);
       case "i32":
         offset += 4;
         return readi32(buf, currentOffset);
+      case "iwithin": {
+        const [_, min, max] = meta as ["iwithin", number, number];
+        const bitWidth = bitWidthForRange(min, max);
+        offset += bitWidth >> 3;
+        return min + readWithinBits(bitWidth, currentOffset);
+      }
+      case "fwithin": {
+        const [_, min, max, quantize] = meta as ["fwithin", number, number, number];
+        offset += quantize >> 3;
+        const levels = 2 ** quantize - 1;
+        return map(readWithinBits(quantize, currentOffset), 0, levels, min, max);
+      }
       case "f8":
         offset += 1;
         return f8.read(buf, currentOffset);
@@ -135,7 +158,7 @@ export function getDeserializeFunction<T>(
         for (const i of $range(1, keypointCount)) {
           const keypointOffset = currentOffset + 1 + 5 * (i - 1);
           const time = readu16(buf, keypointOffset) / 0xFFFF;
-          const value = deserialize(["color"], keypointOffset + 2) as Color3;
+          const value = readColor(keypointOffset + 2);
 
           bytesRead += 5;
           keypoints.push(new ColorSequenceKeypoint(time, value));
@@ -145,12 +168,8 @@ export function getDeserializeFunction<T>(
         return new ColorSequence(keypoints);
       }
       case "color": {
-        const r = readu8(buf, currentOffset) as number;
-        const g = readu8(buf, currentOffset + 1) as number;
-        const b = readu8(buf, currentOffset + 2) as number;
         offset += 3;
-
-        return fromRGB(r, g, b);
+        return readColor(currentOffset);
       }
       case "udim": {
         const [_, scaleType, offsetType] = meta;

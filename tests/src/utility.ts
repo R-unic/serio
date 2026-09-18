@@ -9,6 +9,8 @@ export type TestLiteralUnion = "a" | "b" | "c" | "d";
 export type TestMixedLiteralUnion = "a" | 69 | true;
 export type TestTaggedUnion = { tag: "a", value: u8; } | { tag: "b", value: String<u8>; };
 export type TestComplexUnion = String<u8> | u8 | { a: String<u8>; } | { b: u16; } | Vector<u8>;
+export type TestBinaryLiteral = "a" | "b";
+export type TestSingularObjectUnion = String<u8> | u8 | { readonly tag: u8; };
 
 export interface TestObject {
   readonly a: u8;
@@ -26,6 +28,22 @@ export interface TestPackedBooleans {
   readonly f: boolean;
   readonly g: boolean;
   readonly h: boolean;
+}
+
+export interface TestManyOptionals {
+  readonly a?: u8;
+  readonly b?: u8;
+  readonly c?: u8;
+  readonly d?: u8;
+  readonly e?: u8;
+  readonly f?: u8;
+  readonly g?: u8;
+  readonly h?: u8;
+}
+
+export interface TestConstantLiteral {
+  readonly kind: "foo";
+  readonly value: u8;
 }
 
 export interface SerializeMetadata<T> {

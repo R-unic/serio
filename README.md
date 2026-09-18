@@ -49,22 +49,39 @@ Serio automatically asserts that inputs are within the bounds of their respectiv
 
 ### Extended Support
 
-Serio supports data types that are not natively supported by the `buffer` library or Roblox. Currently the only examples of this are `f24`,`f16`, `f8`, `u12`, `u24`, `i12` and `i24`. 12-bit types are not allowed without using packing as they occupy individual bits and require packing.
+Serio supports data types that are not natively supported by the `buffer` library or Roblox. Currently the only examples of this are `f24`, `f16` and `f8`, which are true floating point encodings (sign/exponent/mantissa) capable of representing values across their whole magnitude range, including `NaN` and `±Infinity`.
 
 Note: Floating point values with low bit counts like f8 and f16 can produce pretty inaccurate results. Use with caution.
 
 ```ts
-import type { f8, f16, f24, u12, u24, i12, i24 } from "@rbxts/serio";
+import type { f8, f16, f24 } from "@rbxts/serio";
 
 interface CoolTypes {
   readonly a: f8;
   readonly b: f16;
   readonly c: f24;
-  readonly d: u12;
-  readonly e: u24;
-  readonly f: i12;
-  readonly g: i24;
 }
+```
+
+### Bounded/Bitpacked Numbers
+
+If you know a number's value always falls within a fixed range, `IntWithin<Min, Max>` and `FloatWithin<Min, Max, Quantize>` will pack it into only as many bits as that range actually needs, rather than a full byte/word. For example, a number that only ranges from 0 to 15 only needs 4 bits, not a whole `u8`.
+
+`IntWithin`'s bit width is derived automatically from `Min`/`Max`. `FloatWithin` linearly quantizes its value into `Quantize` bits across `[Min, Max]` — it can't represent values outside that range, `NaN`, or `±Infinity`, so reach for `f8`/`f16`/`f24`/`f32`/`f64` instead when the magnitude isn't known ahead of time.
+
+Whenever the resulting bit width isn't a multiple of 8, the type must be wrapped in `Packed<>` so its leftover bits can share bytes with other packed fields.
+
+```ts
+import type { IntWithin, FloatWithin, Packed } from "@rbxts/serio";
+
+interface Player {
+  // 0-100 needs only 7 bits, so this must be packed
+  readonly health: IntWithin<0, 100>;
+  // 0-359 degrees quantized to 9 bits, also packed
+  readonly facingAngle: FloatWithin<0, 359, 9>;
+}
+
+type PackedPlayer = Packed<Player>;
 ```
 
 ### Customization
