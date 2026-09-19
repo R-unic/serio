@@ -430,6 +430,18 @@ class DeserializationTest {
     Assert.equal(value, result);
   }
 
+  @Theory
+  @InlineData(Enum.UserInputState.Begin)
+  @InlineData(Enum.UserInputState.Change)
+  @InlineData(Enum.UserInputState.End)
+  @InlineData(Enum.UserInputState.Cancel)
+  @InlineData(Enum.UserInputState.None)
+  public packedEnum(value: Enum.UserInputState): void {
+    const result = this.deserialize<Packed<{ state: Enum.UserInputState, flag: boolean; }>>({ state: value, flag: true });
+    Assert.equal(value, result.state);
+    Assert.true(result.flag);
+  }
+
   @Fact
   public color(): void {
     const value = Color3.fromRGB(200, 100, 50);

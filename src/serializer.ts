@@ -1,5 +1,5 @@
 
-import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange, assertWithinRange, bitWidthForRange, isNaN } from "./utility";
+import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange, assertWithinRange, bitWidthForCount, bitWidthForRange, isNaN } from "./utility";
 import { f8 } from "./utility/f8";
 import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
@@ -214,11 +214,18 @@ export function getSerializeFunction<T>(
         break;
       }
       case "enum": {
-        const enumIndex = sortedEnums[meta[1]!].indexOf(value as never);
+        const items = sortedEnums[meta[1]!];
+        const enumIndex = items.indexOf(value as never);
 
-        assertNumberRange(enumIndex, 1, false, "enum index");
-        allocate(1);
-        writeu8(buf, currentOffset, enumIndex);
+        if (packing) {
+          const bitWidth = bitWidthForCount(items.size());
+          writeWithinBits(enumIndex, bitWidth, currentOffset);
+        } else {
+          assertNumberRange(enumIndex, 1, false, "enum index");
+          allocate(1);
+          writeu8(buf, currentOffset, enumIndex);
+        }
+
         break;
       }
       case "numbersequence": {

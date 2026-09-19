@@ -1,4 +1,4 @@
-import { sizeOfNumberType, sign, CF__add, bitWidthForRange } from "./utility";
+import { sizeOfNumberType, sign, CF__add, bitWidthForCount, bitWidthForRange } from "./utility";
 import { f24 } from "./utility/f24";
 import { f16 } from "./utility/f16";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS, IS_LUNE } from "./constants";
@@ -127,10 +127,18 @@ export function getDeserializeFunction<T>(
         return readstring(buf, currentOffset + lengthSize, length);
       }
       case "enum": {
+        const items = sortedEnums[meta[1]!];
+
+        if (packing) {
+          const bitWidth = bitWidthForCount(items.size());
+          offset += bitWidth >> 3;
+          return items[readWithinBits(bitWidth, currentOffset)];
+        }
+
         const index = readu8(buf, currentOffset);
         offset += 1;
 
-        return sortedEnums[meta[1]!][index];
+        return items[index];
       }
       case "numbersequence": {
         const keypointCount = readu8(buf, currentOffset);

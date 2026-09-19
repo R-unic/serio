@@ -1,5 +1,5 @@
 import { SerializerSchema } from "./types";
-import { bitWidthForRange, getSortedEnumItems } from "./utility";
+import { bitWidthForCount, bitWidthForRange, getSortedEnumItems } from "./utility";
 
 const { max, ceil } = math;
 
@@ -183,6 +183,14 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       const [_, index] = schema;
       if (info.sortedEnums[index] === undefined)
         info.sortedEnums[index] = getSortedEnumItems(Enum[index as never]);
+
+      // Enums are always a full byte when unpacked (for backwards compatibility), but bitpack
+      // down to the minimum width needed for their item count when wrapped in `Packed<>`.
+      if (packing(info)) {
+        const leftoverBits = bitWidthForCount(info.sortedEnums[index].size()) % 8;
+        if (leftoverBits > 0)
+          addPackedBit(info, leftoverBits);
+      }
 
       break;
     }

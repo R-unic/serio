@@ -551,6 +551,18 @@ class SerializationTest extends BaseSerializationTest {
   }
 
   @Fact
+  public packedEnum(): void {
+    // UserInputState (5 items) only needs 3 bits when packed, so it fits alongside another bit
+    // in a single byte instead of costing 2 bytes (1 for the enum + 1 for the bool) unpacked
+    const { buf } = this.serialize<Packed<{ state: Enum.UserInputState, flag: boolean; }>>({
+      state: Enum.UserInputState.Cancel,
+      flag: true
+    });
+    Assert.defined(buf);
+    Assert.equal(1, len(buf));
+  }
+
+  @Fact
   public color(): void {
     const value = Color3.fromRGB(200, 100, 50);
     const { buf } = this.serialize<Color3>(value);

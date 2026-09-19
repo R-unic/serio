@@ -143,6 +143,8 @@ This doesn't just affect booleans though, it also affects:
   - Optimization for two vector special cases (0,0,0 and 1,1,1) and [axis aligned rotation special cases](https://github.com/R-unic/serio/blob/master/src/constants.ts#L8)
   - Boolean for whether the position was optimized
   - Boolean for whether the rotation was optimized
+- Enums
+  - Instead of a full byte, only the minimum number of bits needed to index the enum's items are used (e.g. a 5-item enum only costs 3 bits instead of 8)
 
 ### Supported Types
 
