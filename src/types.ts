@@ -20,15 +20,22 @@ export type PrimitiveDataType =
 
 export type USize = u8 | u16 | u32;
 export type Primitive<T extends PrimitiveDataType = PrimitiveDataType> = [T];
+
+/** The schema for a single numeric value: either a plain sized number type, or a bounded/bitpacked one. */
+export type NumberSchema =
+  | Primitive<NumberType>
+  | ["iwithin", min: number, max: number]
+  | ["fwithin", min: number, max: number, step: number];
+
 export type SerializerSchema =
   | ["iwithin", min: number, max: number]
   | ["fwithin", min: number, max: number, step: number]
   | Primitive
-  | ["udim", scaleType: Primitive<NumberType>, offsetType: Primitive<NumberType>]
-  | ["udim2", scaleXType: Primitive<NumberType>, offsetXType: Primitive<NumberType>, scaleYType: Primitive<NumberType>, offsetYType: Primitive<NumberType>]
-  | ["vector", xType: Primitive<NumberType>, yType: Primitive<NumberType>, zType: Primitive<NumberType>]
-  | ["cframe", xType: Primitive<NumberType>, yType: Primitive<NumberType>, zType: Primitive<NumberType>]
-  | ["rect", minXType: Primitive<NumberType>, minYType: Primitive<NumberType>, maxXType: Primitive<NumberType>, maxYType: Primitive<NumberType>]
+  | ["udim", scaleType: NumberSchema, offsetType: NumberSchema]
+  | ["udim2", scaleXType: NumberSchema, offsetXType: NumberSchema, scaleYType: NumberSchema, offsetYType: NumberSchema]
+  | ["vector", xType: NumberSchema, yType: NumberSchema, zType: NumberSchema]
+  | ["cframe", xType: NumberSchema, yType: NumberSchema, zType: NumberSchema]
+  | ["rect", minXType: NumberSchema, minYType: NumberSchema, maxXType: NumberSchema, maxYType: NumberSchema]
   | ["object", elements: (string | SerializerSchema)[], preallocation: Map<unknown, unknown>]
   | ["object_raw", [fieldName: string, fieldType: SerializerSchema][]]
   | ["list", elementType: SerializerSchema, lengthType: Primitive<IntType>]

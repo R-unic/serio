@@ -1,4 +1,4 @@
-import { SerializerSchema } from "./types";
+import { NumberSchema, SerializerSchema } from "./types";
 import { bitWidthForCount, bitWidthForRange, bitWidthForStep, getSortedEnumItems } from "./utility";
 
 const { max, ceil } = math;
@@ -146,12 +146,49 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       schema = [kind, possibleValues, finalSize];
       break;
     }
-    case "udim2":
-    case "vector":
-    case "cframe":
     case "bool":
       addPackedBit(info);
       break;
+    case "udim": {
+      const [_, scaleType, offsetType] = schema;
+      schema = [kind, schemaPass(scaleType, info) as NumberSchema, schemaPass(offsetType, info) as NumberSchema];
+      break;
+    }
+    case "udim2": {
+      const [_, scaleXType, offsetXType, scaleYType, offsetYType] = schema;
+      addPackedBit(info);
+      schema = [
+        kind,
+        schemaPass(scaleXType, info) as NumberSchema,
+        schemaPass(offsetXType, info) as NumberSchema,
+        schemaPass(scaleYType, info) as NumberSchema,
+        schemaPass(offsetYType, info) as NumberSchema
+      ];
+      break;
+    }
+    case "vector": {
+      const [_, xType, yType, zType] = schema;
+      addPackedBit(info);
+      schema = [kind, schemaPass(xType, info) as NumberSchema, schemaPass(yType, info) as NumberSchema, schemaPass(zType, info) as NumberSchema];
+      break;
+    }
+    case "cframe": {
+      const [_, xType, yType, zType] = schema;
+      addPackedBit(info);
+      schema = [kind, schemaPass(xType, info) as NumberSchema, schemaPass(yType, info) as NumberSchema, schemaPass(zType, info) as NumberSchema];
+      break;
+    }
+    case "rect": {
+      const [_, minXType, minYType, maxXType, maxYType] = schema;
+      schema = [
+        kind,
+        schemaPass(minXType, info) as NumberSchema,
+        schemaPass(minYType, info) as NumberSchema,
+        schemaPass(maxXType, info) as NumberSchema,
+        schemaPass(maxYType, info) as NumberSchema
+      ];
+      break;
+    }
     case "set":
     case "list": {
       info.flags |= IterationFlags.SizeUnknown;

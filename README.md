@@ -84,6 +84,20 @@ interface Player {
 type PackedPlayer = Packed<Player>;
 ```
 
+`IntWithin`/`FloatWithin` also compose with `Vector`, `Transform`, `ScaleOffset`, `ScaleOffset2`, and `Bounds` as axis types, since those are ultimately just per-axis number schemas. This lets a known-bounded position (e.g. a small arena) pack into far fewer bits than even a custom `i16`/`u16` axis would.
+
+```ts
+import type { Vector, Transform, IntWithin, Packed } from "@rbxts/serio";
+
+interface Arena {
+  // a 64x64x64 arena only needs 6 bits per axis (18 bits total), instead of 3 whole i16s (48 bits)
+  readonly position: Vector<IntWithin<0, 63>>;
+  readonly orientation: Transform<IntWithin<0, 63>>;
+}
+
+type PackedArena = Packed<Arena>;
+```
+
 ### Customization
 
 Serio encourages full customization over the size of serialized values.

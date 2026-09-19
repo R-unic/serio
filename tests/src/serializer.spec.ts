@@ -11,7 +11,7 @@ import {
 import type {
   u8, u16, u32, i8, i16, i32, f8, f16, f24, f32, f64,
   String, List, HashSet, HashMap, Packed, Tuple,
-  IntWithin, FloatWithin,
+  IntWithin, FloatWithin, Vector, Bounds,
 } from "../src/index";
 import type { NumberType } from "../src/types";
 
@@ -683,6 +683,30 @@ class SerializationTest extends BaseSerializationTest {
   public floatWithinRequiresPackingWhenNotByteAligned(): void {
     // 0-100 stepping by 2 needs 6 bits, which isn't byte-aligned, so it must be packed
     Assert.throws(() => this.serialize<FloatWithin<0, 100, 2>>(50));
+  }
+
+  @Fact
+  public vectorBitpackedAxesRequiresPacking(): void {
+    // each axis only needs 6 bits (0-63), so it must be packed
+    Assert.throws(() => this.serialize<Vector<IntWithin<0, 63>>>(new Vector3(1, 2, 3)));
+  }
+
+  @Fact
+  public vectorBitpackedAxes(): void {
+    // 3 axes x 6 bits (0-63) + 1 "isOptimized" bit = 19 bits -> 3 bytes, instead of 12 (3x u32) unpacked
+    const value = new Vector3(10, 20, 30);
+    const { buf } = this.serialize<Packed<{ pos: Vector<IntWithin<0, 63>>; }>>({ pos: value });
+    Assert.defined(buf);
+    Assert.equal(3, len(buf));
+  }
+
+  @Fact
+  public rectBitpackedAxes(): void {
+    // 4 axes (min/max X/Y) x 6 bits (0-63) = 24 bits -> 3 bytes, instead of 16 (4x f32) unpacked
+    const value = new Rect(5, 10, 60, 63);
+    const { buf } = this.serialize<Packed<{ bounds: Bounds<IntWithin<0, 63>>; }>>({ bounds: value });
+    Assert.defined(buf);
+    Assert.equal(3, len(buf));
   }
 
   @Fact

@@ -10,7 +10,7 @@ import {
 import type {
   u8, u16, u32, i8, i16, i32, f16, f24, f32, f64,
   String, List, HashSet, HashMap, Vector,
-  Transform,
+  Transform, Bounds, ScaleOffset2,
   Packed, Tuple,
   f8,
   IntWithin, FloatWithin
@@ -100,6 +100,34 @@ class DeserializationTest {
     const result = this.deserialize<Packed<{ a: FloatWithin<0, 100, 2>, b: FloatWithin<-50, 50, 2>; }>>(value);
     Assert.fuzzyEqual(value.a, result.a, 2);
     Assert.fuzzyEqual(value.b, result.b, 2);
+  }
+
+  @Fact
+  public vectorBitpackedAxes(): void {
+    const value = new Vector3(10, 20, 30);
+    const result = this.deserialize<Packed<{ pos: Vector<IntWithin<0, 63>>; }>>({ pos: value });
+    assertVectorEqual(value, result.pos);
+  }
+
+  @Fact
+  public cframeBitpackedPosition(): void {
+    const cf = new CFrame(10, 20, 30).mul(angles(rad(37), rad(52), rad(8)));
+    const result = this.deserialize<Packed<{ cf: Transform<IntWithin<0, 63>>; }>>({ cf });
+    assertCFrameEqual(cf, result.cf);
+  }
+
+  @Fact
+  public rectBitpackedAxes(): void {
+    const value = new Rect(5, 10, 60, 63);
+    const result = this.deserialize<Packed<{ bounds: Bounds<IntWithin<0, 63>>; }>>({ bounds: value });
+    Assert.equal(value, result.bounds);
+  }
+
+  @Fact
+  public udim2BitpackedAxes(): void {
+    const value = UDim2.fromOffset(10, 20);
+    const result = this.deserialize<Packed<{ ud: ScaleOffset2<f32, IntWithin<0, 63>>; }>>({ ud: value });
+    Assert.equal(value, result.ud);
   }
 
   @Fact
