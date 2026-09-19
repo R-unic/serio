@@ -1,4 +1,4 @@
-import { sizeOfNumberType, sign, CF__add, bitWidthForCount, bitWidthForRange } from "./utility";
+import { sizeOfNumberType, sign, CF__add, bitWidthForCount, bitWidthForRange, stepMaxCode } from "./utility";
 import { f24 } from "./utility/f24";
 import { f16 } from "./utility/f16";
 import { AXIS_ALIGNED_ORIENTATIONS, COMMON_UDIM2S, COMMON_VECTORS, IS_LUNE } from "./constants";
@@ -92,10 +92,13 @@ export function getDeserializeFunction<T>(
         return min + readWithinBits(bitWidth, currentOffset);
       }
       case "fwithin": {
-        const [_, min, max, quantize] = meta as ["fwithin", number, number, number];
-        offset += quantize >> 3;
-        const levels = 2 ** quantize - 1;
-        return map(readWithinBits(quantize, currentOffset), 0, levels, min, max);
+        const [_, min, max, step] = meta as ["fwithin", number, number, number];
+        const maxCode = stepMaxCode(min, max, step);
+        const bitWidth = bitWidthForCount(maxCode + 1);
+        offset += bitWidth >> 3;
+
+        const decoded = min + readWithinBits(bitWidth, currentOffset) * step;
+        return decoded > max ? max : decoded;
       }
       case "f8":
         offset += 1;

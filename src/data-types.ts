@@ -94,7 +94,7 @@ export type f24 = number & { readonly _f24?: never; };
 export type f32 = number & { readonly _f32?: never; };
 export type f64 = number & { readonly _f64?: never; };
 export type IntWithin<Min extends number, Max extends number> = number & { readonly _iwithin?: [Min, Max]; };
-export type FloatWithin<Min extends number, Max extends number, Quantize extends number> = number & { readonly _fwithin?: [Min, Max, Quantize]; };
+export type FloatWithin<Min extends number, Max extends number, Step extends number> = number & { readonly _fwithin?: [Min, Max, Step]; };
 
 export type String<LengthType extends USize = u32> = string & { readonly _string?: [LengthType]; };
 

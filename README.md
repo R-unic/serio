@@ -65,9 +65,9 @@ interface CoolTypes {
 
 ### Bounded/Bitpacked Numbers
 
-If you know a number's value always falls within a fixed range, `IntWithin<Min, Max>` and `FloatWithin<Min, Max, Quantize>` will pack it into only as many bits as that range actually needs, rather than a full byte/word. For example, a number that only ranges from 0 to 15 only needs 4 bits, not a whole `u8`.
+If you know a number's value always falls within a fixed range, `IntWithin<Min, Max>` and `FloatWithin<Min, Max, Step>` will pack it into only as many bits as that range actually needs, rather than a full byte/word. For example, a number that only ranges from 0 to 15 only needs 4 bits, not a whole `u8`.
 
-`IntWithin`'s bit width is derived automatically from `Min`/`Max`. `FloatWithin` linearly quantizes its value into `Quantize` bits across `[Min, Max]` — it can't represent values outside that range, `NaN`, or `±Infinity`, so reach for `f8`/`f16`/`f24`/`f32`/`f64` instead when the magnitude isn't known ahead of time.
+`IntWithin`'s bit width is derived automatically from `Min`/`Max`. `FloatWithin` linearly quantizes its value to the nearest multiple of `Step` across `[Min, Max]`, then derives its bit width the same way (e.g. a range of `0-359` stepping by `1` needs 9 bits, since there are 360 representable values). It can't represent values outside `[Min, Max]`, `NaN`, or `±Infinity`, so reach for `f8`/`f16`/`f24`/`f32`/`f64` instead when the magnitude isn't known ahead of time.
 
 Whenever the resulting bit width isn't a multiple of 8, the type must be wrapped in `Packed<>` so its leftover bits can share bytes with other packed fields.
 
@@ -77,8 +77,8 @@ import type { IntWithin, FloatWithin, Packed } from "@rbxts/serio";
 interface Player {
   // 0-100 needs only 7 bits, so this must be packed
   readonly health: IntWithin<0, 100>;
-  // 0-359 degrees quantized to 9 bits, also packed
-  readonly facingAngle: FloatWithin<0, 359, 9>;
+  // 0-359 degrees, quantized to whole degrees, needs 9 bits, also packed
+  readonly facingAngle: FloatWithin<0, 359, 1>;
 }
 
 type PackedPlayer = Packed<Player>;
@@ -145,6 +145,8 @@ This doesn't just affect booleans though, it also affects:
   - Boolean for whether the rotation was optimized
 - Enums
   - Instead of a full byte, only the minimum number of bits needed to index the enum's items are used (e.g. a 5-item enum only costs 3 bits instead of 8)
+- `IntWithin<Min, Max>` / `FloatWithin<Min, Max, Step>`
+  - Only required when their bit width isn't already a multiple of 8 (see [Bounded/Bitpacked Numbers](#boundedbitpacked-numbers))
 
 ### Supported Types
 

@@ -1,5 +1,5 @@
 
-import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange, assertWithinRange, bitWidthForCount, bitWidthForRange, isNaN } from "./utility";
+import { sizeOfNumberType, sign, CF__index, fuzzyEq, isNumberType, assertNumberRange, assertWithinRange, bitWidthForCount, bitWidthForRange, stepMaxCode, isNaN } from "./utility";
 import { f8 } from "./utility/f8";
 import { f16 } from "./utility/f16";
 import { f24 } from "./utility/f24";
@@ -133,10 +133,11 @@ export function getSerializeFunction<T>(
         break;
       }
       case "fwithin": {
-        const [_, min, max, quantize] = meta as ["fwithin", number, number, number];
-        const levels = 2 ** quantize - 1;
-        const code = clamp(floor(map(value as number, min, max, 0, levels) + 0.5), 0, levels);
-        writeWithinBits(code, quantize, currentOffset);
+        const [_, min, max, step] = meta as ["fwithin", number, number, number];
+        const maxCode = stepMaxCode(min, max, step);
+        const bitWidth = bitWidthForCount(maxCode + 1);
+        const code = clamp(floor(((value as number) - min) / step + 0.5), 0, maxCode);
+        writeWithinBits(code, bitWidth, currentOffset);
         break;
       }
       case "f8": {

@@ -3,6 +3,7 @@ import type { ConcreteNumberType, NumberType, Primitive } from "../types";
 
 const { sort } = table;
 const { magnitude } = vector;
+const { ceil } = math;
 
 export * from "./fastcalls";
 
@@ -44,6 +45,16 @@ export function bitWidthForCount(count: number): number {
 /** The minimum number of bits required to represent every integer in `[min, max]`. */
 export function bitWidthForRange(min: number, max: number): number {
   return bitWidthForCount(max - min + 1);
+}
+
+/** The highest quantization code reachable in `[min, max]` when stepping by `step`. */
+export function stepMaxCode(min: number, max: number, step: number): number {
+  return ceil((max - min) / step);
+}
+
+/** The minimum number of bits required to represent every multiple of `step` in `[min, max]`. */
+export function bitWidthForStep(min: number, max: number, step: number): number {
+  return bitWidthForCount(stepMaxCode(min, max, step) + 1);
 }
 
 export function fuzzyEq(a: Vector3, b: Vector3, epsilon = 1e-6): boolean {

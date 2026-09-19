@@ -1,5 +1,5 @@
 import { SerializerSchema } from "./types";
-import { bitWidthForCount, bitWidthForRange, getSortedEnumItems } from "./utility";
+import { bitWidthForCount, bitWidthForRange, bitWidthForStep, getSortedEnumItems } from "./utility";
 
 const { max, ceil } = math;
 
@@ -73,11 +73,11 @@ function schemaPass(schema: SerializerSchema, info: Writable<ProcessedInfo>): Se
       break;
     }
     case "fwithin": {
-      const [, min, max, quantize] = schema as ["fwithin", number, number, number];
-      const leftoverBits = quantize % 8;
+      const [, min, max, step] = schema as ["fwithin", number, number, number];
+      const leftoverBits = bitWidthForStep(min, max, step) % 8;
       if (leftoverBits > 0) {
         if (!packing(info)) {
-          throw `[@rbxts/serio]: FloatWithin<${min}, ${max}, ${quantize}> is not byte-aligned and may not be used without packing!`;
+          throw `[@rbxts/serio]: FloatWithin<${min}, ${max}, ${step}> is not byte-aligned and may not be used without packing!`;
         }
 
         addPackedBit(info, leftoverBits);

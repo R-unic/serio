@@ -87,15 +87,17 @@ class DeserializationTest {
 
   @Fact
   public floatWithinByteAligned(): void {
-    const n = 42.5;
-    const result = this.deserialize<FloatWithin<0, 100, 8>>(n);
-    Assert.fuzzyEqual(n, result, 0.5);
+    // 0-255 stepping by 1 needs exactly 8 bits, so no packing is required
+    const n = 200;
+    const result = this.deserialize<FloatWithin<0, 255, 1>>(n);
+    Assert.equal(n, result);
   }
 
   @Fact
   public floatWithinPacking(): void {
+    // 0-100 and -50-50 stepping by 2 each need 6 bits, which isn't byte-aligned, so they must be packed
     const value = { a: 42.5, b: -10 };
-    const result = this.deserialize<Packed<{ a: FloatWithin<0, 100, 6>, b: FloatWithin<-50, 50, 6>; }>>(value);
+    const result = this.deserialize<Packed<{ a: FloatWithin<0, 100, 2>, b: FloatWithin<-50, 50, 2>; }>>(value);
     Assert.fuzzyEqual(value.a, result.a, 2);
     Assert.fuzzyEqual(value.b, result.b, 2);
   }

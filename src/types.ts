@@ -22,7 +22,7 @@ export type USize = u8 | u16 | u32;
 export type Primitive<T extends PrimitiveDataType = PrimitiveDataType> = [T];
 export type SerializerSchema =
   | ["iwithin", min: number, max: number]
-  | ["fwithin", min: number, max: number, quantize: number]
+  | ["fwithin", min: number, max: number, step: number]
   | Primitive
   | ["udim", scaleType: Primitive<NumberType>, offsetType: Primitive<NumberType>]
   | ["udim2", scaleXType: Primitive<NumberType>, offsetXType: Primitive<NumberType>, scaleYType: Primitive<NumberType>, offsetYType: Primitive<NumberType>]

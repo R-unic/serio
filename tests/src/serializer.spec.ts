@@ -71,13 +71,14 @@ class SerializationTest extends BaseSerializationTest {
 
   @Fact
   public floatWithin(): void {
-    const n = 42.5;
-    const { buf } = this.serialize<FloatWithin<0, 100, 8>>(n);
+    // 0-255 stepping by 1 needs exactly 8 bits, so no packing is required
+    const n = 200;
+    const { buf } = this.serialize<FloatWithin<0, 255, 1>>(n);
     Assert.defined(buf);
     Assert.equal(1, len(buf));
 
     const result = readu8(buf, 0);
-    Assert.equal(108, result);
+    Assert.equal(200, result);
   }
 
   @Fact
@@ -680,8 +681,8 @@ class SerializationTest extends BaseSerializationTest {
 
   @Fact
   public floatWithinRequiresPackingWhenNotByteAligned(): void {
-    // 0-100 quantized to 6 bits is not byte-aligned, so it must be packed
-    Assert.throws(() => this.serialize<FloatWithin<0, 100, 6>>(50));
+    // 0-100 stepping by 2 needs 6 bits, which isn't byte-aligned, so it must be packed
+    Assert.throws(() => this.serialize<FloatWithin<0, 100, 2>>(50));
   }
 
   @Fact
