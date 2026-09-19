@@ -28,6 +28,7 @@ export type SerializerSchema =
   | ["udim2", scaleXType: Primitive<NumberType>, offsetXType: Primitive<NumberType>, scaleYType: Primitive<NumberType>, offsetYType: Primitive<NumberType>]
   | ["vector", xType: Primitive<NumberType>, yType: Primitive<NumberType>, zType: Primitive<NumberType>]
   | ["cframe", xType: Primitive<NumberType>, yType: Primitive<NumberType>, zType: Primitive<NumberType>]
+  | ["rect", minXType: Primitive<NumberType>, minYType: Primitive<NumberType>, maxXType: Primitive<NumberType>, maxYType: Primitive<NumberType>]
   | ["object", elements: (string | SerializerSchema)[], preallocation: Map<unknown, unknown>]
   | ["object_raw", [fieldName: string, fieldType: SerializerSchema][]]
   | ["list", elementType: SerializerSchema, lengthType: Primitive<IntType>]

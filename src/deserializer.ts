@@ -246,6 +246,14 @@ export function getDeserializeFunction<T>(
         const position = deserialize(["vector", xType, yType, zType]) as Vector3;
         return CF__add(rotation, position);
       }
+      case "rect": {
+        const [_, minXType, minYType, maxXType, maxYType] = meta;
+        const minX = deserialize(minXType) as number;
+        const minY = deserialize(minYType) as number;
+        const maxX = deserialize(maxXType) as number;
+        const maxY = deserialize(maxYType) as number;
+        return new Rect(minX, minY, maxX, maxY);
+      }
       case "list": {
         const [_, elementMeta, sizeMeta] = meta;
         const size = deserialize(sizeMeta) as number;

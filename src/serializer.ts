@@ -374,6 +374,15 @@ export function getSerializeFunction<T>(
         serialize(position, ["vector", xType, yType, zType]);
         break;
       }
+      case "rect": {
+        const [_, minXType, minYType, maxXType, maxYType] = meta;
+        const rect = value as Rect;
+        serialize(rect.Min.X, minXType);
+        serialize(rect.Min.Y, minYType);
+        serialize(rect.Max.X, maxXType);
+        serialize(rect.Max.Y, maxYType);
+        break;
+      }
       case "list": {
         const [_, elementMeta, sizeMeta] = meta;
         const list = value as unknown[];

@@ -126,6 +126,14 @@ export type Transform<
   Z extends number = X
 > = CFrame & { readonly _cf?: [X, Y, Z]; };
 
+/** Rect */
+export type Bounds<
+  MinX extends number = f32,
+  MinY extends number = MinX,
+  MaxX extends number = MinX,
+  MaxY extends number = MinY
+> = Rect & { readonly _rect?: [MinX, MinY, MaxX, MaxY]; };
+
 /** T[] */
 export type List<T, LengthType extends USize = u32> =
   T[] & { readonly _list?: [T, LengthType]; };

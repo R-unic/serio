@@ -538,6 +538,19 @@ class SerializationTest extends BaseSerializationTest {
   }
 
   @Fact
+  public rect(): void {
+    const value = new Rect(10, 20, 300, 400);
+    const { buf } = this.serialize<Rect>(value);
+    Assert.defined(buf);
+    Assert.equal(16, len(buf)); // 4x f32
+
+    Assert.equal(value.Min.X, readf32(buf, 0));
+    Assert.equal(value.Min.Y, readf32(buf, 4));
+    Assert.equal(value.Max.X, readf32(buf, 8));
+    Assert.equal(value.Max.Y, readf32(buf, 12));
+  }
+
+  @Fact
   public color(): void {
     const value = Color3.fromRGB(200, 100, 50);
     const { buf } = this.serialize<Color3>(value);

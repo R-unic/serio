@@ -424,6 +424,13 @@ class DeserializationTest {
   }
 
   @Fact
+  public rect(): void {
+    const value = new Rect(10, 20, 300, 400);
+    const result = this.deserialize<Rect>(value);
+    Assert.equal(value, result);
+  }
+
+  @Fact
   public color(): void {
     const value = Color3.fromRGB(200, 100, 50);
     const result = this.deserialize<Color3>(value);

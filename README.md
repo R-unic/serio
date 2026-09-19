@@ -89,7 +89,7 @@ type PackedPlayer = Packed<Player>;
 Serio encourages full customization over the size of serialized values.
 
 ```ts
-import type { List, String, HashSet, HashMap, Tuple, Vector, ScaleOffset, ScaleOffset2, i8, u8, i16, u16 } from "@rbxts/serio";
+import type { List, String, HashSet, HashMap, Tuple, Vector, ScaleOffset, ScaleOffset2, Bounds, i8, u8, i16, u16 } from "@rbxts/serio";
 
 interface Example {
   // serialize the length of the array/string/tuple/set/map as a u8, allowing a maximum of 255 elements (which most collections are under anyways)
@@ -115,6 +115,9 @@ interface Example {
   udim2: ScaleOffset2<f32, u8>;
   // serialize X.Scale as an f32, Y.Scale as a u8, X.Offset as a u8, and Y.Offset as an i8
   specificUDim2: ScaleOffset2<f32, u8, u8, i8>;
+
+  // serialize Rect.Min/Max X and Y as u16s instead of the default f32s
+  bounds: Bounds<u16>;
 }
 
 const serializer = createSerializer<Example>();
@@ -153,6 +156,7 @@ This doesn't just affect booleans though, it also affects:
 - Vector3
 - UDim
 - UDim2
+- Rect
 - Color3
 - ColorSequence
 - NumberSequence
